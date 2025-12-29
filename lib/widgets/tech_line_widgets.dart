@@ -403,6 +403,9 @@ class TechPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 如果没有指定高度，使用自适应布局
+    final bool useExpandedLayout = height != null;
+    
     return GlowBorderContainer(
       width: width,
       height: height,
@@ -410,15 +413,22 @@ class TechPanel extends StatelessWidget {
       glowIntensity: 0.2,
       padding: EdgeInsets.zero,
       child: Column(
+        mainAxisSize: useExpandedLayout ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (title != null) _buildHeader(),
-          Expanded(
-            child: Padding(
+          if (useExpandedLayout)
+            Expanded(
+              child: Padding(
+                padding: padding,
+                child: child,
+              ),
+            )
+          else
+            Padding(
               padding: padding,
               child: child,
             ),
-          ),
         ],
       ),
     );
@@ -452,7 +462,7 @@ class TechPanel extends StatelessWidget {
             title!,
             style: TextStyle(
               color: TechColors.textPrimary,
-              fontSize: 13,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
               shadows: [
