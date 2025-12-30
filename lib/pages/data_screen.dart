@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/tech_line_widgets.dart';
 import '../widgets/data_card.dart';
 import '../widgets/valve_control.dart';
+import '../models/app_state.dart';
 
 /// 数据大屏页面
 /// 用于显示智能生产线数字孪生系统的数据大屏内容
@@ -13,24 +14,275 @@ class DataScreenPage extends StatefulWidget {
 }
 
 class _DataScreenPageState extends State<DataScreenPage> {
-  // 4路蝶阀状态
-  List<ValveItem> _valves = [
-    const ValveItem(id: '1', name: '1号蝶阀', isOpen: true),
-    const ValveItem(id: '2', name: '2号蝶阀', isOpen: false),
-    const ValveItem(id: '3', name: '3号蝶阀', isOpen: true),
-    const ValveItem(id: '4', name: '4号蝶阀', isOpen: false),
-  ];
+  late AppState _appState;
+
+  @override
+  void initState() {
+    super.initState();
+    _appState = AppState.instance;
+    _appState.addListener(_onStateChanged);
+  }
+
+  @override
+  void dispose() {
+    _appState.removeListener(_onStateChanged);
+    super.dispose();
+  }
+
+  void _onStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   void _onValveChanged(ValveItem valve) {
-    setState(() {
-      _valves = _valves.map((v) {
-        if (v.id == valve.id) {
-          return valve;
-        }
-        return v;
-      }).toList();
+    // 模拟操作延迟和可能的失败
+    // 实际项目中这里应该是调用API
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      // 90%成功率，10%失败率（用于演示）
+      final isSuccess = DateTime.now().millisecond % 10 != 0;
+      
+      if (isSuccess) {
+        // 保存到全局状态
+        await _appState.updateValveState(valve.id, valve.isOpen);
+        
+        // 显示成功提示
+        _showOperationResult(
+          success: true,
+          message: '${valve.name}${valve.isOpen ? "开启" : "关闭"}成功',
+        );
+      } else {
+        // 显示失败提示
+        _showOperationResult(
+          success: false,
+          message: '${valve.name}操作失败：设备响应超时',
+        );
+      }
     });
   }
+
+  /// 显示操作结果提示
+  void _showOperationResult({required bool success, required String message}) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              success ? Icons.check_circle : Icons.error,
+              color: success ? TechColors.statusNormal : TechColors.statusAlarm,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: success 
+          ? TechColors.statusNormal.withOpacity(0.9) 
+          : TechColors.statusAlarm.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        duration: Duration(seconds: success ? 2 : 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(
+            color: success ? TechColors.statusNormal : TechColors.statusAlarm,
+            width: 1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建风机状态指示器
+  Widget _buildFanStatusIndicator() {
+    final fanRunning = _appState.fanRunning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (fanRunning ? TechColors.statusNormal : TechColors.statusAlarm).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: fanRunning ? TechColors.statusNormal : TechColors.statusAlarm,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            fanRunning ? Icons.check_circle : Icons.cancel,
+            size: 14,
+            color: fanRunning ? TechColors.statusNormal : TechColors.statusAlarm,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            fanRunning ? '风机运行中' : '风机已停止',
+            style: TextStyle(
+              color: fanRunning ? TechColors.statusNormal : TechColors.statusAlarm,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示频谱对话框
+  void _showSpectrumDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: TechColors.bgMedium,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: TechColors.glowCyan.withOpacity(0.3)),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.graphic_eq, color: TechColors.glowCyan, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              '振动频谱分析',
+              style: TextStyle(color: TechColors.textPrimary),
+            ),
+          ],
+        ),
+        content: Container(
+          width: 600,
+          height: 400,
+          decoration: BoxDecoration(
+            color: TechColors.bgDeep,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: TechColors.borderDark),
+          ),
+          child: const Center(
+            child: Text(
+              '频谱内容将在这里显示',
+              style: TextStyle(color: TechColors.textSecondary, fontSize: 16),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('关闭', style: TextStyle(color: TechColors.glowCyan)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建振动频谱数据行
+  Widget _buildVibrationSpectrumRow() {
+    final vibrationFault = _appState.vibrationFault;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Row(
+        children: [
+          Icon(Icons.graphic_eq, size: 18, color: TechColors.statusWarning),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              '除尘器风机振动频谱',
+              style: TextStyle(
+                color: TechColors.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          // 故障提示图标
+          if (vibrationFault)
+            Tooltip(
+              message: '故障检测',
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.warning,
+                  size: 18,
+                  color: TechColors.glowRed,
+                ),
+              ),
+            ),
+          // 数值显示
+          Text(
+            '50.0',
+            style: TextStyle(
+              color: TechColors.glowCyan,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Roboto Mono',
+              shadows: [
+                Shadow(
+                  color: TechColors.glowCyan.withOpacity(0.5),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            'Hz',
+            style: TextStyle(
+              color: TechColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // 频谱查看按钮
+          _buildSpectrumButton(),
+        ],
+      ),
+    );
+  }
+
+  /// 构建频谱查看按钮
+  Widget _buildSpectrumButton() {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: _showSpectrumDialog,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: TechColors.glowCyan.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: TechColors.glowCyan.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.bar_chart,
+                size: 14,
+                color: TechColors.glowCyan,
+              ),
+              const SizedBox(width: 4),
+              const Text(
+                '查看频谱',
+                style: TextStyle(
+                  color: TechColors.glowCyan,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -43,53 +295,62 @@ class _DataScreenPageState extends State<DataScreenPage> {
           // 电极深度叠加在电炉图片上
           Positioned(
             right: screenWidth * 0.05,
-            top: 16,
+            top: 8,
             width: screenWidth * 0.5,
-            child: Stack(
-              children: [
-                Image.asset(
-                  'assets/images/furnace.png',
-                  fit: BoxFit.contain,
-                ),
-                // 电极1（左上）
-                Positioned(
-                  top: screenWidth * 0.5 * 0.15,
-                  left: (screenWidth * 0.5) / 2 - 180,
-                  child: _ElectrodeDepthWidget(label: '电极1', value: '120', unit: 'mm'),
-                ),
-                // 电极2（右上）
-                Positioned(
-                  top: screenWidth * 0.5 * 0.15,
-                  left: (screenWidth * 0.5) / 2 + 60,
-                  child: _ElectrodeDepthWidget(label: '电极2', value: '118', unit: 'mm'),
-                ),
-                // 电极3（下方中间）
-                Positioned(
-                  top: screenWidth * 0.5 * 0.40,
-                  left: (screenWidth * 0.5) / 2 - 60,
-                  child: _ElectrodeDepthWidget(label: '电极3', value: '123', unit: 'mm'),
-                ),
-              ],
+            child: AspectRatio(
+              aspectRatio: 1.0, // 根据实际图片比例调整
+              child: Stack(
+                children: [
+                  Image.asset(
+                    'assets/images/furnace.png',
+                    fit: BoxFit.contain,
+                    gaplessPlayback: true,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                  // 电极1（左上）
+                  Positioned(
+                    top: screenWidth * 0.5 * 0.15,
+                    left: (screenWidth * 0.5) / 2 - 180,
+                    child: _ElectrodeWidget(label: '电极1', depth: '120', current: '28.5'),
+                  ),
+                  // 电极2（右上）
+                  Positioned(
+                    top: screenWidth * 0.5 * 0.15,
+                    left: (screenWidth * 0.5) / 2 + 60,
+                    child: _ElectrodeWidget(label: '电极2', depth: '118', current: '29.2'),
+                  ),
+                  // 电极3（下方中间）
+                  Positioned(
+                    top: screenWidth * 0.5 * 0.40,
+                    left: (screenWidth * 0.5) / 2 - 60,
+                    child: _ElectrodeWidget(label: '电极3', depth: '123', current: '27.8'),
+                  ),
+                ],
+              ),
             ),
           ),
           // 左侧面板组（料仓 + 蝶阀）
           Positioned(
             left: 16,
-            top: 32,
-            bottom: 32,
+            top: 16,
+            bottom: 16,
             child: SizedBox(
               width: screenWidth * 0.40 - 32,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // 料仓面板
                   TechPanel(
                     title: '料仓',
                     accentColor: TechColors.glowCyan,
+                    headerActions: [
+                      _buildFanStatusIndicator(),
+                    ],
                     child: DataCard(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                       items: const [
-                        DataItem(icon: Icons.thermostat, label: '除尘器入口温度', value: '85.6', unit: '℃', iconColor: TechColors.glowOrange),
+                        DataItem(icon: Icons.thermostat, label: '除尘器入口温度', value: '85.6', unit: '℃', iconColor: TechColors.glowOrange, threshold: 80.0, isAboveThreshold: true),
                         DataItem(icon: Icons.air, label: '除尘器排风口 PM10 浓度', value: '12.3', unit: 'µg/m³', iconColor: TechColors.glowGreen, threshold: 10.0, isAboveThreshold: true),
                         DataItem(icon: Icons.flash_on, label: '除尘器风机瞬时功率', value: '45.2', unit: 'kW', iconColor: TechColors.glowCyan),
                         DataItem(icon: Icons.electric_meter, label: '除尘器风机累计能耗', value: '1280.5', unit: 'kWh', iconColor: TechColors.glowBlue),
@@ -98,15 +359,21 @@ class _DataScreenPageState extends State<DataScreenPage> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 25),
                   // 蝶阀面板
                   TechPanel(
                     title: '蝶阀',
                     accentColor: TechColors.glowGreen,
                     child: ValveControlPanel(
-                      valves: _valves,
+                      valves: _appState.valves.map((v) => ValveItem(
+                        id: v.id,
+                        name: v.name,
+                        isOpen: v.isOpen,
+                      )).toList(),
                       onValveChanged: _onValveChanged,
                     ),
                   ),
+                  const SizedBox(height: 25),
                   // 前置过滤器面板
                   TechPanel(
                     title: '前置过滤器',
@@ -124,8 +391,8 @@ class _DataScreenPageState extends State<DataScreenPage> {
           // 电炉面板（图片下方，和左侧等高）
           Positioned(
             right: 16,
-            top: 32,
-            bottom: 32,
+            top: 16,
+            bottom: 16,
             width: screenWidth * 0.58,
             child: Align(
               alignment: Alignment.bottomCenter,
@@ -229,42 +496,127 @@ class FurnacePowerCard extends StatelessWidget {
   }
 }
 
-/// 电极深度小部件
-class _ElectrodeDepthWidget extends StatelessWidget {
+/// 电极数据小部件（显示深度和电流）
+class _ElectrodeWidget extends StatelessWidget {
   final String label;
-  final String value;
-  final String unit;
-  const _ElectrodeDepthWidget({
+  final String depth;
+  final String current;
+  
+  const _ElectrodeWidget({
     required this.label,
-    required this.value,
-    required this.unit,
+    required this.depth,
+    required this.current,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.85),
+        color: TechColors.bgMedium.withOpacity(0.9),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: TechColors.glowCyan, width: 1),
+        border: Border.all(color: TechColors.glowCyan, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: TechColors.glowCyan.withOpacity(0.18),
-            blurRadius: 8,
+            color: TechColors.glowCyan.withOpacity(0.25),
+            blurRadius: 12,
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.bolt, color: TechColors.glowCyan, size: 18),
-          const SizedBox(width: 4),
-          Text(label, style: const TextStyle(color: TechColors.textSecondary, fontSize: 14)),
-          const SizedBox(width: 8),
-          Text(value, style: const TextStyle(color: TechColors.glowCyan, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Roboto Mono')),
-          const SizedBox(width: 2),
-          Text(unit, style: const TextStyle(color: TechColors.textSecondary, fontSize: 14)),
+          // 第一行：电极标签
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.bolt, color: TechColors.glowCyan, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: TechColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // 第二行：深度数据
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '深度 ',
+                style: TextStyle(
+                  color: TechColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                depth,
+                style: TextStyle(
+                  color: TechColors.glowCyan,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto Mono',
+                  shadows: [
+                    Shadow(
+                      color: TechColors.glowCyan.withOpacity(0.5),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Text(
+                'mm',
+                style: TextStyle(
+                  color: TechColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // 第三行：电流数据
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '电流 ',
+                style: TextStyle(
+                  color: TechColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                current,
+                style: TextStyle(
+                  color: TechColors.glowOrange,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Roboto Mono',
+                  shadows: [
+                    Shadow(
+                      color: TechColors.glowOrange.withOpacity(0.5),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Text(
+                'kA',
+                style: TextStyle(
+                  color: TechColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

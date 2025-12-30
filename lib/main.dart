@@ -1,10 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
 import 'pages/home.dart';
+import 'models/app_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化全局状态管理
+  await AppState.initialize();
 
   // 初始化窗口管理器 - 隐藏原生标题栏，使用自定义标题栏
   // 设置为19寸5:4固定窗口 (1280x1024)
@@ -35,17 +40,38 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 预缓存电炉图片，确保打开页面时立即显示
+    precacheImage(const AssetImage('assets/images/furnace.png'), context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '智能生产线数字孪生系统',
+      title: '3号电炉系统',
       theme: ThemeData.dark(),
       themeMode: ThemeMode.dark,
       home: const DigitalTwinPage(),
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('zh', 'CN'), // 中文简体
+      ],
+      locale: const Locale('zh', 'CN'),
     );
   }
 }
