@@ -104,7 +104,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                     colors: [TechColors.glowCyan, TechColors.glowCyanLight],
                   ).createShader(bounds),
                   child: const Text(
-                    '4号电炉系统',
+                    '3号电炉系统',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
