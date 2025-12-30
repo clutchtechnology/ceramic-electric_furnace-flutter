@@ -58,7 +58,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '3号电炉系统',
+      title: '4号电炉系统',
       theme: ThemeData.dark(),
       themeMode: ThemeMode.dark,
       home: const DigitalTwinPage(),
