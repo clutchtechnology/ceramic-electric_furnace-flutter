@@ -1,31 +1,44 @@
 import 'package:flutter/material.dart';
 import 'tech_line_widgets.dart';
+import '../models/app_state.dart' show ValveStatus;
 
 /// 蝶阀控制组件
-/// 显示蝶阀状态并支持远程开/关控制
+/// 显示蝶阀状态并支持远程开/停/关控制
 class ValveControl extends StatelessWidget {
   final String name;
-  final bool isOpen;
-  final ValueChanged<bool>? onChanged;
+  final ValveStatus status;
+  final double openingDegree;
+  final ValueChanged<ValveStatus>? onChanged;
   final Color openColor;
   final Color closeColor;
+  final Color stopColor;
 
   const ValveControl({
     super.key,
     required this.name,
-    required this.isOpen,
+    required this.status,
+    this.openingDegree = 0,
     this.onChanged,
     this.openColor = TechColors.glowGreen,
     this.closeColor = TechColors.glowRed,
+    this.stopColor = TechColors.statusWarning,
   });
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = isOpen ? openColor : closeColor;
-    final statusText = isOpen ? '开启' : '关闭';
+    final statusColor = status == ValveStatus.open
+        ? openColor
+        : status == ValveStatus.closed
+            ? closeColor
+            : stopColor;
+    final statusText = status == ValveStatus.open
+        ? '开启 ${openingDegree.toStringAsFixed(0)}%'
+        : status == ValveStatus.closed
+            ? '关闭'
+            : '停止';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: TechColors.bgMedium.withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
@@ -33,32 +46,32 @@ class ValveControl extends StatelessWidget {
           color: statusColor.withOpacity(0.5),
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 状态指示灯
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: statusColor,
-              boxShadow: [
-                BoxShadow(
-                  color: statusColor.withOpacity(0.6),
-                  blurRadius: 8,
-                  spreadRadius: 2,
+          // 上部分：编号（名称）+ 开关按钮
+          Row(
+            children: [
+              // 状态指示灯
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: statusColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: statusColor.withOpacity(0.6),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // 名称
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
+              ),
+              const SizedBox(width: 8),
+              // 名称
+              Expanded(
+                child: Text(
                   name,
                   style: const TextStyle(
                     color: TechColors.textPrimary,
@@ -66,33 +79,42 @@ class ValveControl extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
+              ),
+              // 开关按钮
+              _buildControlButton(
+                label: '开',
+                isActive: status == ValveStatus.open,
+                activeColor: openColor,
+                onTap: () => onChanged?.call(ValveStatus.open),
+              ),
+              const SizedBox(width: 6),
+              _buildControlButton(
+                label: '关',
+                isActive: status == ValveStatus.closed,
+                activeColor: closeColor,
+                onTap: () => onChanged?.call(ValveStatus.closed),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 下部分：状态 + 停止按钮
+          Row(
+            children: [
+              const SizedBox(width: 18), // 对齐状态指示灯位置
+              Expanded(
+                child: Text(
                   '状态: $statusText',
                   style: TextStyle(
                     color: statusColor,
                     fontSize: 12,
                   ),
                 ),
-              ],
-            ),
-          ),
-          // 控制按钮
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildControlButton(
-                label: '开',
-                isActive: isOpen,
-                activeColor: openColor,
-                onTap: () => onChanged?.call(true),
               ),
-              const SizedBox(width: 8),
               _buildControlButton(
-                label: '关',
-                isActive: !isOpen,
-                activeColor: closeColor,
-                onTap: () => onChanged?.call(false),
+                label: '停',
+                isActive: status == ValveStatus.stopped,
+                activeColor: stopColor,
+                onTap: () => onChanged?.call(ValveStatus.stopped),
               ),
             ],
           ),
@@ -110,7 +132,7 @@ class ValveControl extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
           color: isActive ? activeColor.withOpacity(0.2) : TechColors.bgDark,
           borderRadius: BorderRadius.circular(4),
@@ -153,19 +175,55 @@ class ValveControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 将蝶阀分成两列显示
+    final rows = <Widget>[];
+    for (int i = 0; i < valves.length; i += 2) {
+      final leftValve = valves[i];
+      final rightValve = i + 1 < valves.length ? valves[i + 1] : null;
+      
+      rows.add(
+        Row(
+          children: [
+            Expanded(
+              child: ValveControl(
+                name: leftValve.name,
+                status: leftValve.status,
+                openingDegree: leftValve.openingDegree,
+                onChanged: (status) {
+                  onValveChanged?.call(leftValve.copyWith(
+                    status: status,
+                    openingDegree: status == ValveStatus.open ? leftValve.openingDegree : 0,
+                  ));
+                },
+              ),
+            ),
+            if (rightValve != null) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: ValveControl(
+                  name: rightValve.name,
+                  status: rightValve.status,
+                  openingDegree: rightValve.openingDegree,
+                  onChanged: (status) {
+                    onValveChanged?.call(rightValve.copyWith(
+                      status: status,
+                      openingDegree: status == ValveStatus.open ? rightValve.openingDegree : 0,
+                    ));
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+      
+      if (i + 2 < valves.length) {
+        rows.add(const SizedBox(height: 10));
+      }
+    }
+    
     return Column(
-      children: [
-        for (int i = 0; i < valves.length; i++) ...[
-          ValveControl(
-            name: valves[i].name,
-            isOpen: valves[i].isOpen,
-            onChanged: (value) {
-              onValveChanged?.call(valves[i].copyWith(isOpen: value));
-            },
-          ),
-          if (i < valves.length - 1) const SizedBox(height: 10),
-        ],
-      ],
+      children: rows,
     );
   }
 }
@@ -174,23 +232,27 @@ class ValveControlPanel extends StatelessWidget {
 class ValveItem {
   final String id;
   final String name;
-  final bool isOpen;
+  final ValveStatus status;
+  final double openingDegree; // 开度百分比 (0-100)
 
   const ValveItem({
     required this.id,
     required this.name,
-    required this.isOpen,
+    required this.status,
+    this.openingDegree = 0,
   });
 
   ValveItem copyWith({
     String? id,
     String? name,
-    bool? isOpen,
+    ValveStatus? status,
+    double? openingDegree,
   }) {
     return ValveItem(
       id: id ?? this.id,
       name: name ?? this.name,
-      isOpen: isOpen ?? this.isOpen,
+      status: status ?? this.status,
+      openingDegree: openingDegree ?? this.openingDegree,
     );
   }
 }

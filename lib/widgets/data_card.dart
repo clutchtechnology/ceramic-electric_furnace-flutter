@@ -65,7 +65,7 @@ class DataCard extends StatelessWidget {
     for (int i = 0; i < items.length; i++) {
       widgets.add(_buildDataRow(items[i]));
       if (i < items.length - 1) {
-        widgets.add(const Divider(height: 32, color: TechColors.borderDark));
+        widgets.add(const Divider(height: 20, color: TechColors.borderDark));
       }
     }
     return widgets;
@@ -76,7 +76,9 @@ class DataCard extends StatelessWidget {
     final isAlarm = item.isAlarm;
     final valueColor = isAlarm ? TechColors.glowRed : TechColors.glowCyan;
     
-    return Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
       children: [
         // 报警图标闪烁效果
         if (isAlarm)
@@ -155,6 +157,7 @@ class DataCard extends StatelessWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }
@@ -201,6 +204,138 @@ class _AlarmIconState extends State<_AlarmIcon> with SingleTickerProviderStateMi
           color: widget.color.withOpacity(_animation.value),
         );
       },
+    );
+  }
+}
+
+/// 电炉专用数据卡片组件（紧凑型）
+/// 用于在电炉面板中展示带阈值的数据，行高更小
+class FurnaceDataCard extends StatelessWidget {
+  final List<DataItem> items;
+  final EdgeInsets padding;
+
+  const FurnaceDataCard({
+    super.key,
+    required this.items,
+    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: TechColors.bgMedium.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: TechColors.borderDark,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: _buildRows(),
+      ),
+    );
+  }
+
+  List<Widget> _buildRows() {
+    final List<Widget> widgets = [];
+    for (int i = 0; i < items.length; i++) {
+      widgets.add(_buildDataRow(items[i]));
+      if (i < items.length - 1) {
+        widgets.add(const Divider(height: 14, color: TechColors.borderDark));
+      }
+    }
+    return widgets;
+  }
+
+  Widget _buildDataRow(DataItem item) {
+    final color = item.iconColor ?? TechColors.glowCyan;
+    final isAlarm = item.isAlarm;
+    final valueColor = isAlarm ? TechColors.glowRed : TechColors.glowCyan;
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          // 报警图标闪烁效果
+          if (isAlarm)
+            _AlarmIcon(icon: item.icon, color: TechColors.glowRed)
+          else
+            Icon(
+              item.icon,
+              size: 18,
+              color: color,
+            ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.label,
+                  style: const TextStyle(
+                    color: TechColors.textSecondary,
+                    fontSize: 16,
+                  ),
+                ),
+                // 显示阈值信息
+                if (item.threshold != null)
+                  Text(
+                    '阈值: ${item.threshold}${item.unit}',
+                    style: TextStyle(
+                      color: isAlarm ? TechColors.glowRed.withOpacity(0.8) : TechColors.textSecondary.withOpacity(0.6),
+                      fontSize: 14,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // 报警标签
+          if (isAlarm)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: TechColors.glowRed.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: TechColors.glowRed),
+              ),
+              child: const Text(
+                '报警',
+                style: TextStyle(
+                  color: TechColors.glowRed,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          Text(
+            item.value,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Roboto Mono',
+              shadows: [
+                Shadow(
+                  color: valueColor.withOpacity(0.5),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            item.unit,
+            style: TextStyle(
+              color: isAlarm ? TechColors.glowRed : TechColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

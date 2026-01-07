@@ -165,6 +165,33 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               ),
               splashRadius: 18,
             ),
+            const SizedBox(width: 8),
+            // 最小化按钮
+            IconButton(
+              onPressed: () async {
+                await windowManager.minimize();
+              },
+              icon: const Icon(
+                Icons.remove,
+                color: TechColors.textSecondary,
+                size: 20,
+              ),
+              splashRadius: 18,
+              tooltip: '最小化',
+            ),
+            // 关闭按钮
+            IconButton(
+              onPressed: () async {
+                await windowManager.close();
+              },
+              icon: const Icon(
+                Icons.close,
+                color: TechColors.textSecondary,
+                size: 20,
+              ),
+              splashRadius: 18,
+              tooltip: '关闭',
+            ),
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/tech_line_widgets.dart';
 import '../widgets/data_card.dart';
 import '../widgets/valve_control.dart';
+import '../widgets/electrode_current_chart.dart';
 import '../models/app_state.dart';
 
 /// 数据大屏页面
@@ -44,12 +45,21 @@ class _DataScreenPageState extends State<DataScreenPage> {
       
       if (isSuccess) {
         // 保存到全局状态
-        await _appState.updateValveState(valve.id, valve.isOpen);
+        await _appState.updateValveState(
+          valve.id,
+          valve.status,
+          openingDegree: valve.openingDegree,
+        );
         
         // 显示成功提示
+        String statusMsg = valve.status == ValveStatus.open
+            ? '开启至${valve.openingDegree.toStringAsFixed(0)}%'
+            : valve.status == ValveStatus.closed
+                ? '关闭'
+                : '停止';
         _showOperationResult(
           success: true,
-          message: '${valve.name}${valve.isOpen ? "开启" : "关闭"}成功',
+          message: '${valve.name}$statusMsg成功',
         );
       } else {
         // 显示失败提示
@@ -294,7 +304,7 @@ class _DataScreenPageState extends State<DataScreenPage> {
         children: [
           // 电极深度叠加在电炉图片上
           Positioned(
-            right: screenWidth * 0.05,
+            left: 16 + (screenWidth - 48) / 3 + 8 + ((screenWidth - 48) * 0.42 + 8 + (screenWidth - 48) * 0.25 - screenWidth * 0.5) / 2,
             top: 8,
             width: screenWidth * 0.5,
             child: AspectRatio(
@@ -330,25 +340,46 @@ class _DataScreenPageState extends State<DataScreenPage> {
               ),
             ),
           ),
-          // 左侧面板组（料仓 + 蝶阀）
+          // 左侧面板组（料仓 + 蝶阀）- 第一列
           Positioned(
             left: 16,
             top: 16,
             bottom: 16,
+            width: (screenWidth - 48) / 3,
             child: SizedBox(
-              width: screenWidth * 0.40 - 32,
+              width: (screenWidth - 48) / 3,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // 顶部面板（无标题）
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return TechPanel(
+                          height: constraints.maxHeight,
+                          accentColor: TechColors.glowOrange,
+                          child: const ElectrodeCurrentChart(
+                            electrodes: [
+                              ElectrodeData(name: '电极1', setValue: 30.0, actualValue: 28.5),
+                              ElectrodeData(name: '电极2', setValue: 30.0, actualValue: 29.2),
+                              ElectrodeData(name: '电极3', setValue: 30.0, actualValue: 27.8),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   // 料仓面板
                   TechPanel(
                     title: '料仓',
                     accentColor: TechColors.glowCyan,
+                    padding: const EdgeInsets.all(8),
                     headerActions: [
                       _buildFanStatusIndicator(),
                     ],
                     child: DataCard(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       items: const [
                         DataItem(icon: Icons.thermostat, label: '除尘器入口温度', value: '85.6', unit: '℃', iconColor: TechColors.glowOrange, threshold: 80.0, isAboveThreshold: true),
                         DataItem(icon: Icons.air, label: '除尘器排风口 PM10 浓度', value: '12.3', unit: 'µg/m³', iconColor: TechColors.glowGreen, threshold: 10.0, isAboveThreshold: true),
@@ -359,50 +390,42 @@ class _DataScreenPageState extends State<DataScreenPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 12),
                   // 蝶阀面板
                   TechPanel(
                     title: '蝶阀',
                     accentColor: TechColors.glowGreen,
+                    padding: const EdgeInsets.all(8),
                     child: ValveControlPanel(
                       valves: _appState.valves.map((v) => ValveItem(
                         id: v.id,
                         name: v.name,
-                        isOpen: v.isOpen,
+                        status: v.status,
+                        openingDegree: v.openingDegree,
                       )).toList(),
                       onValveChanged: _onValveChanged,
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                  // 前置过滤器面板
-                  TechPanel(
-                    title: '前置过滤器',
-                    accentColor: TechColors.glowBlue,
-                    child: DataCard(
-                      items: const [
-                        DataItem(icon: Icons.compress, label: '进出口压差', value: '125.6', unit: 'Pa', iconColor: TechColors.glowBlue, threshold: 100.0, isAboveThreshold: true),
-                      ],
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          // 电炉面板（图片下方，和左侧等高）
+          // 电炉和前置过滤器面板（图片下方，和左侧等高）- 第二列和第三列
           Positioned(
-            right: 16,
+            left: 16 + (screenWidth - 48) / 3 + 8,
             top: 16,
             bottom: 16,
-            width: screenWidth * 0.58,
+            width: (screenWidth - 48) * 0.42,
             child: Align(
               alignment: Alignment.bottomCenter,
               child: TechPanel(
                 title: '电炉',
                 accentColor: TechColors.glowOrange,
+                padding: const EdgeInsets.all(8),
                 child: Row(
                   children: [
                     Expanded(
-                      child: DataCard(
+                      child: FurnaceDataCard(
                         items: const [
                           DataItem(icon: Icons.thermostat, label: '炉皮温度1', value: '420', unit: '℃', iconColor: TechColors.glowRed, threshold: 400, isAboveThreshold: true),
                           DataItem(icon: Icons.thermostat, label: '炉皮温度2', value: '398', unit: '℃', iconColor: TechColors.glowRed, threshold: 400, isAboveThreshold: true),
@@ -411,14 +434,14 @@ class _DataScreenPageState extends State<DataScreenPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           FurnacePowerCard(power: '320.5', energy: '15800'),
-                          const Divider(height: 32, color: TechColors.borderDark),
-                          DataCard(
+                          const Divider(height: 16, color: TechColors.borderDark),
+                          FurnaceDataCard(
                             items: const [
                               DataItem(icon: Icons.water, label: '冷却水流速', value: '2.5', unit: 'm³/h', iconColor: TechColors.glowCyan, threshold: 2.0, isAboveThreshold: false),
                               DataItem(icon: Icons.opacity, label: '冷却水水压', value: '0.18', unit: 'MPa', iconColor: TechColors.glowCyan, threshold: 0.15, isAboveThreshold: false),
@@ -429,6 +452,45 @@ class _DataScreenPageState extends State<DataScreenPage> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+          // 第三列 - 重量和前置过滤器面板
+          Positioned(
+            left: 16 + (screenWidth - 48) / 3 + 8 + (screenWidth - 48) * 0.42 + 8,
+            top: 16,
+            bottom: 16,
+            width: (screenWidth - 48) * 0.25,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 重量面板
+                  TechPanel(
+                    title: '重量',
+                    accentColor: TechColors.glowOrange,
+                    padding: const EdgeInsets.all(8),
+                    child: DataCard(
+                      items: const [
+                        DataItem(icon: Icons.scale, label: '料仓重量', value: '2350', unit: 'kg', iconColor: TechColors.glowOrange),
+                        DataItem(icon: Icons.arrow_downward, label: '投料重量', value: '185', unit: 'kg', iconColor: TechColors.glowOrange),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // 前置过滤器面板
+                  TechPanel(
+                    title: '前置过滤器',
+                    accentColor: TechColors.glowBlue,
+                    padding: const EdgeInsets.all(8),
+                    child: DataCard(
+                      items: const [
+                        DataItem(icon: Icons.compress, label: '进出口压差', value: '125.6', unit: 'Pa', iconColor: TechColors.glowBlue, threshold: 100.0, isAboveThreshold: true),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

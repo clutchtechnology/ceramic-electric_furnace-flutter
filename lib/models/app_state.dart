@@ -14,10 +14,10 @@ class AppState extends ChangeNotifier {
   bool fanRunning = true;
   bool vibrationFault = true;
   List<ValveState> valves = [
-    ValveState(id: '1', name: '1号蝶阀', isOpen: true),
-    ValveState(id: '2', name: '2号蝶阀', isOpen: false),
-    ValveState(id: '3', name: '3号蝶阀', isOpen: true),
-    ValveState(id: '4', name: '4号蝶阀', isOpen: false),
+    ValveState(id: '1', name: '1号', status: ValveStatus.open, openingDegree: 75),
+    ValveState(id: '2', name: '2号', status: ValveStatus.closed),
+    ValveState(id: '3', name: '3号', status: ValveStatus.open, openingDegree: 85),
+    ValveState(id: '4', name: '4号', status: ValveStatus.stopped),
   ];
 
   // 历史曲线页面状态
@@ -77,14 +77,28 @@ class AppState extends ChangeNotifier {
   /// 从本地存储加载状态
   Future<void> _loadState() async {
     try {
+      // 检查数据版本，如果版本不匹配则清除旧数据
+      final dataVersion = _prefs.getInt('dataVersion') ?? 0;
+      if (dataVersion < 2) {
+        // 清除旧版本的蝶阀数据
+        await _prefs.remove('valves');
+        await _prefs.setInt('dataVersion', 2);
+        debugPrint('数据版本升级，已清除旧的蝶阀数据');
+      }
+      
       // 加载数据大屏状态
       fanRunning = _prefs.getBool('fanRunning') ?? true;
       vibrationFault = _prefs.getBool('vibrationFault') ?? true;
       
       final valvesJson = _prefs.getString('valves');
       if (valvesJson != null) {
-        final List<dynamic> valvesList = jsonDecode(valvesJson);
-        valves = valvesList.map((e) => ValveState.fromJson(e)).toList();
+        try {
+          final List<dynamic> valvesList = jsonDecode(valvesJson);
+          valves = valvesList.map((e) => ValveState.fromJson(e)).toList();
+        } catch (e) {
+          debugPrint('加载蝶阀状态失败: $e，使用默认值');
+          // 保持默认值不变
+        }
       }
 
       // 加载历史曲线页面状态
@@ -203,13 +217,14 @@ class AppState extends ChangeNotifier {
   }
 
   /// 更新蝶阀状态
-  Future<void> updateValveState(String valveId, bool isOpen) async {
+  Future<void> updateValveState(String valveId, ValveStatus status, {double? openingDegree}) async {
     final index = valves.indexWhere((v) => v.id == valveId);
     if (index != -1) {
       valves[index] = ValveState(
         id: valves[index].id,
         name: valves[index].name,
-        isOpen: isOpen,
+        status: status,
+        openingDegree: openingDegree ?? (status == ValveStatus.open ? valves[index].openingDegree : 0),
       );
       await saveDataScreenState();
     }
@@ -270,27 +285,51 @@ class AppState extends ChangeNotifier {
   }
 }
 
+/// 蝶阀状态枚举
+enum ValveStatus {
+  open,    // 开启
+  closed,  // 关闭
+  stopped, // 停止
+}
+
 /// 蝶阀状态类
 class ValveState {
   final String id;
   final String name;
-  final bool isOpen;
+  final ValveStatus status;
+  final double openingDegree; // 开度百分比 (0-100)
 
   ValveState({
     required this.id,
     required this.name,
-    required this.isOpen,
+    required this.status,
+    this.openingDegree = 0,
   });
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
-    'isOpen': isOpen,
+    'status': status.index,
+    'openingDegree': openingDegree,
   };
 
-  factory ValveState.fromJson(Map<String, dynamic> json) => ValveState(
-    id: json['id'],
-    name: json['name'],
-    isOpen: json['isOpen'],
-  );
+  factory ValveState.fromJson(Map<String, dynamic> json) {
+    // 兼容旧数据格式（使用 isOpen 布尔值）
+    ValveStatus status;
+    if (json.containsKey('status') && json['status'] != null) {
+      status = ValveStatus.values[json['status']];
+    } else if (json.containsKey('isOpen')) {
+      // 旧数据格式：将 isOpen 转换为新的 status
+      status = json['isOpen'] == true ? ValveStatus.open : ValveStatus.closed;
+    } else {
+      status = ValveStatus.closed; // 默认值
+    }
+    
+    return ValveState(
+      id: json['id'],
+      name: json['name'],
+      status: status,
+      openingDegree: (json['openingDegree'] ?? 75.0).toDouble(),
+    );
+  }
 }
