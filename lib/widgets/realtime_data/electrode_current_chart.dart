@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'tech_line_widgets.dart';
+import '../common/tech_line_widgets.dart';
 
 /// 电极电流柱状图组件
 /// 显示三个电极的设定值和实际值对比
 class ElectrodeCurrentChart extends StatelessWidget {
   final List<ElectrodeData> electrodes;
-  
+
   const ElectrodeCurrentChart({
     super.key,
     required this.electrodes,
@@ -55,9 +55,10 @@ class ElectrodeCurrentChart extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             crossAxisAlignment: CrossAxisAlignment.end,
-                            children: electrodes.map((electrode) => 
-                              _buildElectrodeGroup(electrode, maxValue)
-                            ).toList(),
+                            children: electrodes
+                                .map((electrode) =>
+                                    _buildElectrodeGroup(electrode, maxValue))
+                                .toList(),
                           ),
                         ),
                       ],
@@ -179,7 +180,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
     required String label,
   }) {
     final heightRatio = value / maxValue;
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
@@ -211,7 +212,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
                     color.withOpacity(0.6),
                   ],
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(4)),
                 border: Border.all(
                   color: color,
                   width: 1,
@@ -282,8 +284,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
 /// 电极数据模型
 class ElectrodeData {
   final String name;
-  final double setValue;      // 设定值
-  final double actualValue;   // 实际值
+  final double setValue; // 设定值
+  final double actualValue; // 实际值
 
   const ElectrodeData({
     required this.name,

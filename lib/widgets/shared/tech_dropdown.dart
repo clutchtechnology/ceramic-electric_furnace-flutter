@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'tech_line_widgets.dart';
+import '../common/tech_line_widgets.dart';
 
 /// 科技风格下拉选择器组件
 class TechDropdown<T> extends StatefulWidget {

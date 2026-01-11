@@ -1,44 +1,38 @@
 import 'package:flutter/material.dart';
-import '../widgets/tech_line_widgets.dart';
-import '../widgets/data_table.dart';
-import '../widgets/time_range_selector.dart';
-import '../widgets/export_button.dart';
-import '../widgets/refresh_button.dart';
+import '../widgets/common/tech_line_widgets.dart';
+import '../widgets/shared/data_table.dart';
+import '../widgets/history_curve/time_range_selector.dart';
+import '../widgets/common/export_button.dart';
+import '../widgets/common/refresh_button.dart';
 
 /// 报警记录页面 - 六个监控面板
-class AlarmRecordScreen extends StatefulWidget {
-  const AlarmRecordScreen({super.key});
+class AlarmRecordPage extends StatefulWidget {
+  const AlarmRecordPage({super.key});
 
   @override
-  State<AlarmRecordScreen> createState() => _AlarmRecordScreenState();
+  State<AlarmRecordPage> createState() => _AlarmRecordPageState();
 }
 
-class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
+class _AlarmRecordPageState extends State<AlarmRecordPage> {
   // 各面板的时间范围
-  DateTime _furnaceSkinStartTime = DateTime.now().subtract(const Duration(hours: 24));
-  DateTime _furnaceSkinEndTime = DateTime.now();
-  DateTime _coolingWaterStartTime = DateTime.now().subtract(const Duration(hours: 24));
+
+  DateTime _coolingWaterStartTime =
+      DateTime.now().subtract(const Duration(hours: 24));
   DateTime _coolingWaterEndTime = DateTime.now();
-  DateTime _preFilterStartTime = DateTime.now().subtract(const Duration(hours: 24));
+  DateTime _preFilterStartTime =
+      DateTime.now().subtract(const Duration(hours: 24));
   DateTime _preFilterEndTime = DateTime.now();
-  DateTime _dustInletStartTime = DateTime.now().subtract(const Duration(hours: 24));
+  DateTime _dustInletStartTime =
+      DateTime.now().subtract(const Duration(hours: 24));
   DateTime _dustInletEndTime = DateTime.now();
   DateTime _pm10StartTime = DateTime.now().subtract(const Duration(hours: 24));
   DateTime _pm10EndTime = DateTime.now();
-  DateTime _fanVibrationStartTime = DateTime.now().subtract(const Duration(hours: 24));
+  DateTime _fanVibrationStartTime =
+      DateTime.now().subtract(const Duration(hours: 24));
   DateTime _fanVibrationEndTime = DateTime.now();
-
-  // 电炉炉皮数据
-  final List<List<String>> _furnaceSkinData = [
-    ['2025-12-30', '08:00:00', 'A1', '650℃'],
-    ['2025-12-30', '08:30:00', 'A2', '680℃'],
-    ['2025-12-30', '09:00:00', 'A3', '720℃'],
-    ['2025-12-30', '09:30:00', 'B1', '695℃'],
-    ['2025-12-30', '10:00:00', 'B2', '710℃'],
-    ['2025-12-30', '10:30:00', 'B3', '685℃'],
-    ['2025-12-30', '11:00:00', 'C1', '730℃'],
-    ['2025-12-30', '11:30:00', 'C2', '705℃'],
-  ];
+  DateTime _waterPumpVibrationStartTime =
+      DateTime.now().subtract(const Duration(hours: 24));
+  DateTime _waterPumpVibrationEndTime = DateTime.now();
 
   // 炉皮冷却水数据
   final List<List<String>> _coolingWaterData = [
@@ -102,12 +96,24 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
 
   // 六个面板的数据
   final List<_AlarmPanelData> _panels = [
-    _AlarmPanelData(title: '电炉炉皮'),
     _AlarmPanelData(title: '炉皮冷却水'),
     _AlarmPanelData(title: '前置过滤器'),
     _AlarmPanelData(title: '除尘器入口'),
     _AlarmPanelData(title: '除尘器排风口PM10'),
     _AlarmPanelData(title: '除尘器风机振动'),
+    _AlarmPanelData(title: '水泵振动'),
+  ];
+
+  // 水泵振动数据
+  final List<List<String>> _waterPumpVibrationData = [
+    ['2025-12-30', '08:00:00', '1.5 mm/s', '45 Hz'],
+    ['2025-12-30', '08:30:00', '1.6 mm/s', '46 Hz'],
+    ['2025-12-30', '09:00:00', '1.8 mm/s', '48 Hz'],
+    ['2025-12-30', '09:30:00', '1.7 mm/s', '47 Hz'],
+    ['2025-12-30', '10:00:00', '2.0 mm/s', '50 Hz'],
+    ['2025-12-30', '10:30:00', '1.9 mm/s', '49 Hz'],
+    ['2025-12-30', '11:00:00', '2.2 mm/s', '52 Hz'],
+    ['2025-12-30', '11:30:00', '1.8 mm/s', '48 Hz'],
   ];
 
   @override
@@ -120,7 +126,7 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
           Expanded(
             child: Row(
               children: [
-                // 电炉炉皮
+                // 炉皮冷却水
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.all(12),
@@ -133,8 +139,8 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                           accentColor: TechColors.glowCyan,
                           onTimeRangeChanged: (start, end) {
                             setState(() {
-                              _furnaceSkinStartTime = start;
-                              _furnaceSkinEndTime = end;
+                              _coolingWaterStartTime = start;
+                              _coolingWaterEndTime = end;
                             });
                             // TODO: 根据时间范围查询数据
                           },
@@ -151,20 +157,20 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                         const SizedBox(width: 8),
                         ExportButton(
                           accentColor: TechColors.glowCyan,
-                          exportTitle: '电炉炉皮',
-                          columns: const ['日期', '时间', '点位', '温度'],
-                          data: _furnaceSkinData,
+                          exportTitle: '炉皮冷却水',
+                          columns: const ['日期', '时间', '流速', '水压'],
+                          data: _coolingWaterData,
                         ),
                       ],
                       child: TechDataTable(
-                        columns: const ['日期', '时间', '点位', '温度'],
-                        data: _furnaceSkinData,
+                        columns: const ['日期', '时间', '流速', '水压'],
+                        data: _coolingWaterData,
                         accentColor: TechColors.glowCyan,
                       ),
                     ),
                   ),
                 ),
-                // 炉皮冷却水
+                // 前置过滤器
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(0, 12, 12, 12),
@@ -177,8 +183,8 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                           accentColor: TechColors.glowBlue,
                           onTimeRangeChanged: (start, end) {
                             setState(() {
-                              _coolingWaterStartTime = start;
-                              _coolingWaterEndTime = end;
+                              _preFilterStartTime = start;
+                              _preFilterEndTime = end;
                             });
                             // TODO: 根据时间范围查询数据
                           },
@@ -195,14 +201,14 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                         const SizedBox(width: 8),
                         ExportButton(
                           accentColor: TechColors.glowBlue,
-                          exportTitle: '炉皮冷却水',
-                          columns: const ['日期', '时间', '流速', '水压'],
-                          data: _coolingWaterData,
+                          exportTitle: '前置过滤器',
+                          columns: const ['日期', '时间', '压差'],
+                          data: _preFilterData,
                         ),
                       ],
                       child: TechDataTable(
-                        columns: const ['日期', '时间', '流速', '水压'],
-                        data: _coolingWaterData,
+                        columns: const ['日期', '时间', '压差'],
+                        data: _preFilterData,
                         accentColor: TechColors.glowBlue,
                       ),
                     ),
@@ -215,7 +221,7 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
           Expanded(
             child: Row(
               children: [
-                // 前置过滤器
+                // 除尘器入口
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -228,8 +234,8 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                           accentColor: TechColors.glowGreen,
                           onTimeRangeChanged: (start, end) {
                             setState(() {
-                              _preFilterStartTime = start;
-                              _preFilterEndTime = end;
+                              _dustInletStartTime = start;
+                              _dustInletEndTime = end;
                             });
                             // TODO: 根据时间范围查询数据
                           },
@@ -246,20 +252,20 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                         const SizedBox(width: 8),
                         ExportButton(
                           accentColor: TechColors.glowGreen,
-                          exportTitle: '前置过滤器',
-                          columns: const ['日期', '时间', '压差'],
-                          data: _preFilterData,
+                          exportTitle: '除尘器入口',
+                          columns: const ['日期', '时间', '温度'],
+                          data: _dustInletData,
                         ),
                       ],
                       child: TechDataTable(
-                        columns: const ['日期', '时间', '压差'],
-                        data: _preFilterData,
+                        columns: const ['日期', '时间', '温度'],
+                        data: _dustInletData,
                         accentColor: TechColors.glowGreen,
                       ),
                     ),
                   ),
                 ),
-                // 除尘器入口
+                // 除尘器排风口PM10
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(0, 0, 12, 12),
@@ -272,57 +278,6 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                           accentColor: TechColors.glowOrange,
                           onTimeRangeChanged: (start, end) {
                             setState(() {
-                              _dustInletStartTime = start;
-                              _dustInletEndTime = end;
-                            });
-                            // TODO: 根据时间范围查询数据
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        RefreshButton(
-                          accentColor: TechColors.glowOrange,
-                          onPressed: () {
-                            setState(() {
-                              // 刷新数据
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        ExportButton(
-                          accentColor: TechColors.glowOrange,
-                          exportTitle: '除尘器入口',
-                          columns: const ['日期', '时间', '温度'],
-                          data: _dustInletData,
-                        ),
-                      ],
-                      child: TechDataTable(
-                        columns: const ['日期', '时间', '温度'],
-                        data: _dustInletData,
-                        accentColor: TechColors.glowOrange,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 第三行：2个面板
-          Expanded(
-            child: Row(
-              children: [
-                // 除尘器排风口PM10
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    child: TechPanel(
-                      title: _panels[4].title,
-                      accentColor: TechColors.statusAlarm,
-                      height: double.infinity,
-                      headerActions: [
-                        TimeRangeSelector(
-                          accentColor: TechColors.statusAlarm,
-                          onTimeRangeChanged: (start, end) {
-                            setState(() {
                               _pm10StartTime = start;
                               _pm10EndTime = end;
                             });
@@ -331,7 +286,7 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                         ),
                         const SizedBox(width: 8),
                         RefreshButton(
-                          accentColor: TechColors.statusAlarm,
+                          accentColor: TechColors.glowOrange,
                           onPressed: () {
                             setState(() {
                               // 刷新数据
@@ -340,7 +295,7 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                         ),
                         const SizedBox(width: 8),
                         ExportButton(
-                          accentColor: TechColors.statusAlarm,
+                          accentColor: TechColors.glowOrange,
                           exportTitle: '除尘器排风口PM10',
                           columns: const ['日期', '时间', '浓度'],
                           data: _pm10Data,
@@ -349,51 +304,102 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
                       child: TechDataTable(
                         columns: const ['日期', '时间', '浓度'],
                         data: _pm10Data,
-                        accentColor: TechColors.statusAlarm,
+                        accentColor: TechColors.glowOrange,
                       ),
                     ),
                   ),
                 ),
-                // 除尘器风机振动
+              ],
+            ),
+          ),
+          // 第三行：2个面板 - 带遮罩
+          Expanded(
+            child: Row(
+              children: [
+                // 除尘器风机振动 (50% Opacity + Disabled)
                 Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(0, 0, 12, 12),
-                    child: TechPanel(
-                      title: _panels[5].title,
-                      accentColor: TechColors.statusWarning,
-                      height: double.infinity,
-                      headerActions: [
-                        TimeRangeSelector(
-                          accentColor: TechColors.statusWarning,
-                          onTimeRangeChanged: (start, end) {
-                            setState(() {
-                              _fanVibrationStartTime = start;
-                              _fanVibrationEndTime = end;
-                            });
-                            // TODO: 根据时间范围查询数据
-                          },
+                  child: Opacity(
+                    opacity: 0.5,
+                    child: IgnorePointer(
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        child: TechPanel(
+                          title: _panels[4].title,
+                          accentColor: TechColors.statusAlarm,
+                          height: double.infinity,
+                          headerActions: [
+                            TimeRangeSelector(
+                              accentColor: TechColors.statusAlarm,
+                              onTimeRangeChanged: (start, end) {
+                                setState(() {
+                                  _fanVibrationStartTime = start;
+                                  _fanVibrationEndTime = end;
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            RefreshButton(
+                              accentColor: TechColors.statusAlarm,
+                              onPressed: () {},
+                            ),
+                            const SizedBox(width: 8),
+                            ExportButton(
+                              accentColor: TechColors.statusAlarm,
+                              exportTitle: '除尘器风机振动',
+                              columns: const ['日期', '时间', '幅值', '频率'],
+                              data: _fanVibrationData,
+                            ),
+                          ],
+                          child: TechDataTable(
+                            columns: const ['日期', '时间', '幅值', '频率'],
+                            data: _fanVibrationData,
+                            accentColor: TechColors.statusAlarm,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        RefreshButton(
+                      ),
+                    ),
+                  ),
+                ),
+                // 水泵振动 (New, 50% Opacity + Disabled)
+                Expanded(
+                  child: Opacity(
+                    opacity: 0.5,
+                    child: IgnorePointer(
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(0, 0, 12, 12),
+                        child: TechPanel(
+                          title: _panels[5].title,
                           accentColor: TechColors.statusWarning,
-                          onPressed: () {
-                            setState(() {
-                              // 刷新数据
-                            });
-                          },
+                          height: double.infinity,
+                          headerActions: [
+                            TimeRangeSelector(
+                              accentColor: TechColors.statusWarning,
+                              onTimeRangeChanged: (start, end) {
+                                setState(() {
+                                  _waterPumpVibrationStartTime = start;
+                                  _waterPumpVibrationEndTime = end;
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            RefreshButton(
+                              accentColor: TechColors.statusWarning,
+                              onPressed: () {},
+                            ),
+                            const SizedBox(width: 8),
+                            ExportButton(
+                              accentColor: TechColors.statusWarning,
+                              exportTitle: '水泵振动',
+                              columns: const ['日期', '时间', '幅值', '频率'],
+                              data: _waterPumpVibrationData,
+                            ),
+                          ],
+                          child: TechDataTable(
+                            columns: const ['日期', '时间', '幅值', '频率'],
+                            data: _waterPumpVibrationData,
+                            accentColor: TechColors.statusWarning,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        ExportButton(
-                          accentColor: TechColors.statusWarning,
-                          exportTitle: '除尘器风机振动',
-                          columns: const ['日期', '时间', '幅值', '频率'],
-                          data: _fanVibrationData,
-                        ),
-                      ],
-                      child: TechDataTable(
-                        columns: const ['日期', '时间', '幅值', '频率'],
-                        data: _fanVibrationData,
-                        accentColor: TechColors.statusWarning,
                       ),
                     ),
                   ),
@@ -405,7 +411,6 @@ class _AlarmRecordScreenState extends State<AlarmRecordScreen> {
       ),
     );
   }
-
 }
 
 // ============================================================================

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../widgets/tech_line_widgets.dart';
+import '../widgets/common/tech_line_widgets.dart';
 
 /// 实时监控页面 - 九宫格监控画面
-class MonitorScreenPage extends StatefulWidget {
-  const MonitorScreenPage({super.key});
+class RealtimeMonitorPage extends StatefulWidget {
+  const RealtimeMonitorPage({super.key});
 
   @override
-  State<MonitorScreenPage> createState() => _MonitorScreenPageState();
+  State<RealtimeMonitorPage> createState() => _RealtimeMonitorPageState();
 }
 
-class _MonitorScreenPageState extends State<MonitorScreenPage> {
+class _RealtimeMonitorPageState extends State<RealtimeMonitorPage> {
   // 监控画面配置
   final List<_MonitorCamera> _cameras = [
     _MonitorCamera(title: '炉皮热成像 - 前视角', type: MonitorType.thermal),
@@ -38,7 +38,6 @@ class _MonitorScreenPageState extends State<MonitorScreenPage> {
       ),
     );
   }
-
 
   /// 九宫格监控画面
   Widget _buildMonitorGrid() {

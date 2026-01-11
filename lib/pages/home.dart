@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:async';
-import '../widgets/tech_line_widgets.dart';
-import 'data_screen.dart';
-import 'monitor_screen.dart';
-import 'history_curve_screen.dart';
-import 'data_query_screen.dart';
-import 'alarm_record_screen.dart';
-import 'system_config_screen.dart';
+import '../widgets/common/tech_line_widgets.dart';
+import 'realtime_data_page.dart';
+import 'realtime_monitor_page.dart';
+import 'history_curve_page.dart';
+import 'alarm_record_page.dart';
+import 'settings_page.dart';
 
 /// 智能生产线数字孪生系统页面
 /// 参考工业 SCADA/数字孪生可视化设计
@@ -33,9 +32,18 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
           children: [
             // 顶部导航栏
             _buildTopNavBar(),
-            // 主内容区 - 根据导航索引显示不同页面
+            // 主内容区 - 使用 IndexedStack 保持页面状态，避免切换时重建
             Expanded(
-              child: _buildCurrentPage(),
+              child: IndexedStack(
+                index: _selectedNavIndex,
+                children: const [
+                  RealtimeDataPage(), // 0: 实时数据
+                  RealtimeMonitorPage(), // 1: 实时监控
+                  HistoryCurvePage(), // 2: 历史曲线
+                  AlarmRecordPage(), // 3: 报警记录
+                  SettingsPage(), // 4: 系统设置
+                ],
+              ),
             ),
           ],
         ),
@@ -43,29 +51,11 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
     );
   }
 
-  /// 根据导航索引显示不同页面
-  Widget _buildCurrentPage() {
-    switch (_selectedNavIndex) {
-      case 0:
-        return const DataScreenPage(); // 数据大屏
-      case 1:
-        return const MonitorScreenPage(); // 实时监控
-      case 2:
-        return const HistoryCurveScreen(); // 历史曲线
-      case 3:
-        return const DataQueryScreen(); // 数据查询
-      case 4:
-        return const AlarmRecordScreen(); // 报警记录
-      case 5:
-        return const SystemConfigScreen(); // 系统配置
-      default:
-        return const DataScreenPage();
-    }
-  }
+  // _buildCurrentPage 方法已移除，由 IndexedStack 替代
 
   /// 顶部导航栏
   Widget _buildTopNavBar() {
-    final navItems = ['数据大屏', '实时监控', '历史曲线', '数据查询', '报警记录'];
+    final navItems = ['数据大屏', '实时监控', '历史曲线', '报警记录'];
 
     return DragToMoveArea(
       child: Container(
@@ -143,7 +133,8 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                           ? TechColors.glowCyan
                           : TechColors.textSecondary,
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                      fontWeight:
+                          isSelected ? FontWeight.w500 : FontWeight.w400,
                     ),
                   ),
                 ),

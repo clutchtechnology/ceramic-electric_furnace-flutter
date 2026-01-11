@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'tech_line_widgets.dart';
+import '../common/tech_line_widgets.dart';
 
 /// 科技风格数据表格组件
-class TechDataTable extends StatelessWidget {
+class TechDataTable extends StatefulWidget {
   final List<String> columns;
   final List<List<String>> data;
   final Color accentColor;
@@ -15,12 +15,25 @@ class TechDataTable extends StatelessWidget {
   });
 
   @override
+  State<TechDataTable> createState() => _TechDataTableState();
+}
+
+class _TechDataTableState extends State<TechDataTable> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: TechColors.bgDark.withOpacity(0.3),
         border: Border.all(
-          color: accentColor.withOpacity(0.2),
+          color: widget.accentColor.withOpacity(0.2),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(4),
@@ -31,26 +44,26 @@ class TechDataTable extends StatelessWidget {
           // 表头
           Container(
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
+              color: widget.accentColor.withOpacity(0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(4),
                 topRight: Radius.circular(4),
               ),
               border: Border(
                 bottom: BorderSide(
-                  color: accentColor.withOpacity(0.3),
+                  color: widget.accentColor.withOpacity(0.3),
                   width: 1,
                 ),
               ),
             ),
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             child: Row(
-              children: columns.map((column) {
+              children: widget.columns.map((column) {
                 return Expanded(
                   child: Text(
                     column,
                     style: TextStyle(
-                      color: accentColor,
+                      color: widget.accentColor,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
@@ -63,15 +76,17 @@ class TechDataTable extends StatelessWidget {
           ),
           // 数据行
           Expanded(
-            child: data.isEmpty
+            child: widget.data.isEmpty
                 ? _buildEmptyState()
                 : Scrollbar(
                     thumbVisibility: true,
+                    controller: _scrollController,
                     child: ListView.builder(
+                      controller: _scrollController,
                       padding: EdgeInsets.zero,
-                      itemCount: data.length,
+                      itemCount: widget.data.length,
                       itemBuilder: (context, index) {
-                        return _buildDataRow(data[index], index);
+                        return _buildDataRow(widget.data[index], index);
                       },
                     ),
                   ),
@@ -90,7 +105,7 @@ class TechDataTable extends StatelessWidget {
             : Colors.transparent,
         border: Border(
           bottom: BorderSide(
-            color: accentColor.withOpacity(0.1),
+            color: widget.accentColor.withOpacity(0.1),
             width: 0.5,
           ),
         ),

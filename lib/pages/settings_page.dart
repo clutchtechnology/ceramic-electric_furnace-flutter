@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../widgets/tech_line_widgets.dart';
+import '../widgets/common/tech_line_widgets.dart';
 import '../models/app_state.dart';
 
 /// 系统配置页面
-class SystemConfigScreen extends StatefulWidget {
-  const SystemConfigScreen({super.key});
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
 
   @override
-  State<SystemConfigScreen> createState() => _SystemConfigScreenState();
+  State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SystemConfigScreenState extends State<SystemConfigScreen> {
+class _SettingsPageState extends State<SettingsPage> {
   late AppState _appState;
 
   @override
@@ -27,33 +27,56 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
   }
 
   // 系统配置数据
-  final TextEditingController _serverIpController = TextEditingController(text: '192.168.1.100');
-  final TextEditingController _serverPortController = TextEditingController(text: '8080');
-  final TextEditingController _plcIpController = TextEditingController(text: '192.168.1.50');
-  final TextEditingController _plcPortController = TextEditingController(text: '502');
+  final TextEditingController _serverIpController =
+      TextEditingController(text: '192.168.1.100');
+  final TextEditingController _serverPortController =
+      TextEditingController(text: '8080');
+  final TextEditingController _plcIpController =
+      TextEditingController(text: '192.168.1.50');
+  final TextEditingController _plcPortController =
+      TextEditingController(text: '502');
   String _plcProtocol = 'Modbus TCP';
-  final TextEditingController _dbAddressController = TextEditingController(text: '192.168.1.200');
-  final TextEditingController _dbPortController = TextEditingController(text: '3306');
-  final TextEditingController _dbUsernameController = TextEditingController(text: 'admin');
-  final TextEditingController _dbPasswordController = TextEditingController(text: '******');
+  final TextEditingController _dbAddressController =
+      TextEditingController(text: '192.168.1.200');
+  final TextEditingController _dbPortController =
+      TextEditingController(text: '3306');
+  final TextEditingController _dbUsernameController =
+      TextEditingController(text: 'admin');
+  final TextEditingController _dbPasswordController =
+      TextEditingController(text: '******');
   bool _showPassword = false;
 
   // 报警阈值数据
-  final TextEditingController _furnaceTemp1Controller = TextEditingController(text: '1200');
-  final TextEditingController _furnaceTemp2Controller = TextEditingController(text: '1200');
-  final TextEditingController _furnaceTemp3Controller = TextEditingController(text: '1200');
-  final TextEditingController _furnaceTemp4Controller = TextEditingController(text: '1200');
-  final TextEditingController _waterFlowMinController = TextEditingController(text: '10');
-  final TextEditingController _waterFlowMaxController = TextEditingController(text: '50');
-  final TextEditingController _waterPressureMinController = TextEditingController(text: '0.2');
-  final TextEditingController _waterPressureMaxController = TextEditingController(text: '0.6');
-  final TextEditingController _filterPressureMinController = TextEditingController(text: '0');
-  final TextEditingController _filterPressureMaxController = TextEditingController(text: '100');
-  final TextEditingController _pm10MaxController = TextEditingController(text: '75');
-  final TextEditingController _fanVibrationMinController = TextEditingController(text: '0');
-  final TextEditingController _fanVibrationMaxController = TextEditingController(text: '5');
-  final TextEditingController _fanFrequencyMinController = TextEditingController(text: '45');
-  final TextEditingController _fanFrequencyMaxController = TextEditingController(text: '55');
+  final TextEditingController _furnaceTemp1Controller =
+      TextEditingController(text: '1200');
+  final TextEditingController _furnaceTemp2Controller =
+      TextEditingController(text: '1200');
+  final TextEditingController _furnaceTemp3Controller =
+      TextEditingController(text: '1200');
+  final TextEditingController _furnaceTemp4Controller =
+      TextEditingController(text: '1200');
+  final TextEditingController _waterFlowMinController =
+      TextEditingController(text: '10');
+  final TextEditingController _waterFlowMaxController =
+      TextEditingController(text: '50');
+  final TextEditingController _waterPressureMinController =
+      TextEditingController(text: '0.2');
+  final TextEditingController _waterPressureMaxController =
+      TextEditingController(text: '0.6');
+  final TextEditingController _filterPressureMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _filterPressureMaxController =
+      TextEditingController(text: '100');
+  final TextEditingController _pm10MaxController =
+      TextEditingController(text: '75');
+  final TextEditingController _fanVibrationMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _fanVibrationMaxController =
+      TextEditingController(text: '5');
+  final TextEditingController _fanFrequencyMinController =
+      TextEditingController(text: '45');
+  final TextEditingController _fanFrequencyMaxController =
+      TextEditingController(text: '55');
 
   @override
   void dispose() {
@@ -141,7 +164,8 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
               },
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? TechColors.glowCyan.withOpacity(0.15)
@@ -170,7 +194,8 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
                             ? TechColors.glowCyan
                             : TechColors.textSecondary,
                         fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                        fontWeight:
+                            isSelected ? FontWeight.w500 : FontWeight.w400,
                       ),
                     ),
                   ],
@@ -217,7 +242,8 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
                 backgroundColor: TechColors.glowCyan.withOpacity(0.2),
                 foregroundColor: TechColors.glowCyan,
                 side: BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             ),
           ],
@@ -318,7 +344,6 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
           ],
         ),
         const SizedBox(height: 16),
-
       ],
     );
   }
@@ -335,17 +360,25 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: _buildInputField('点位1最高温度 (℃)', _furnaceTemp1Controller)),
+                Expanded(
+                    child: _buildInputField(
+                        '点位1最高温度 (℃)', _furnaceTemp1Controller)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInputField('点位2最高温度 (℃)', _furnaceTemp2Controller)),
+                Expanded(
+                    child: _buildInputField(
+                        '点位2最高温度 (℃)', _furnaceTemp2Controller)),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildInputField('点位3最高温度 (℃)', _furnaceTemp3Controller)),
+                Expanded(
+                    child: _buildInputField(
+                        '点位3最高温度 (℃)', _furnaceTemp3Controller)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInputField('点位4最高温度 (℃)', _furnaceTemp4Controller)),
+                Expanded(
+                    child: _buildInputField(
+                        '点位4最高温度 (℃)', _furnaceTemp4Controller)),
               ],
             ),
           ],
@@ -359,17 +392,25 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: _buildInputField('流速最低值 (m³/h)', _waterFlowMinController)),
+                Expanded(
+                    child: _buildInputField(
+                        '流速最低值 (m³/h)', _waterFlowMinController)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInputField('流速最高值 (m³/h)', _waterFlowMaxController)),
+                Expanded(
+                    child: _buildInputField(
+                        '流速最高值 (m³/h)', _waterFlowMaxController)),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildInputField('水压最低值 (MPa)', _waterPressureMinController)),
+                Expanded(
+                    child: _buildInputField(
+                        '水压最低值 (MPa)', _waterPressureMinController)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInputField('水压最高值 (MPa)', _waterPressureMaxController)),
+                Expanded(
+                    child: _buildInputField(
+                        '水压最高值 (MPa)', _waterPressureMaxController)),
               ],
             ),
           ],
@@ -383,9 +424,13 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: _buildInputField('压差最小值 (Pa)', _filterPressureMinController)),
+                Expanded(
+                    child: _buildInputField(
+                        '压差最小值 (Pa)', _filterPressureMinController)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInputField('压差最大值 (Pa)', _filterPressureMaxController)),
+                Expanded(
+                    child: _buildInputField(
+                        '压差最大值 (Pa)', _filterPressureMaxController)),
               ],
             ),
           ],
@@ -399,7 +444,9 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: _buildInputField('PM10最大值 (μg/m³)', _pm10MaxController)),
+                Expanded(
+                    child: _buildInputField(
+                        'PM10最大值 (μg/m³)', _pm10MaxController)),
                 const Expanded(child: SizedBox()),
               ],
             ),
@@ -414,17 +461,25 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: _buildInputField('振动幅值最小值 (mm/s)', _fanVibrationMinController)),
+                Expanded(
+                    child: _buildInputField(
+                        '振动幅值最小值 (mm/s)', _fanVibrationMinController)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInputField('振动幅值最大值 (mm/s)', _fanVibrationMaxController)),
+                Expanded(
+                    child: _buildInputField(
+                        '振动幅值最大值 (mm/s)', _fanVibrationMaxController)),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildInputField('振动频率最小值 (Hz)', _fanFrequencyMinController)),
+                Expanded(
+                    child: _buildInputField(
+                        '振动频率最小值 (Hz)', _fanFrequencyMinController)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInputField('振动频率最大值 (Hz)', _fanFrequencyMaxController)),
+                Expanded(
+                    child: _buildInputField(
+                        '振动频率最大值 (Hz)', _fanFrequencyMaxController)),
               ],
             ),
           ],
@@ -503,9 +558,11 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
+              borderSide:
+                  BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
         ),
       ],
@@ -545,9 +602,11 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
+              borderSide:
+                  BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             suffixIcon: IconButton(
               icon: Icon(
                 _showPassword ? Icons.visibility : Icons.visibility_off,
@@ -615,7 +674,6 @@ class _SystemConfigScreenState extends State<SystemConfigScreen> {
       ],
     );
   }
-
 
   /// 保存设置
   void _saveSettings() {

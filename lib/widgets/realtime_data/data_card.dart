@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'tech_line_widgets.dart';
+import '../common/tech_line_widgets.dart';
 
 /// 数据项模型
 class DataItem {
@@ -10,6 +10,7 @@ class DataItem {
   final Color? iconColor;
   final double? threshold; // 阈值
   final bool isAboveThreshold; // 是否超过阈值报警
+  final bool isMasked; // 是否添加遮罩层
 
   const DataItem({
     required this.icon,
@@ -19,6 +20,7 @@ class DataItem {
     this.iconColor,
     this.threshold,
     this.isAboveThreshold = false,
+    this.isMasked = false,
   });
 
   /// 检查当前值是否超过阈值
@@ -65,7 +67,7 @@ class DataCard extends StatelessWidget {
     for (int i = 0; i < items.length; i++) {
       widgets.add(_buildDataRow(items[i]));
       if (i < items.length - 1) {
-        widgets.add(const Divider(height: 20, color: TechColors.borderDark));
+        widgets.add(const Divider(height: 12, color: TechColors.borderDark));
       }
     }
     return widgets;
@@ -75,90 +77,103 @@ class DataCard extends StatelessWidget {
     final color = item.iconColor ?? TechColors.glowCyan;
     final isAlarm = item.isAlarm;
     final valueColor = isAlarm ? TechColors.glowRed : TechColors.glowCyan;
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+
+    // 1. 构建正常显示的内容
+    Widget content = Padding(
+      padding: const EdgeInsets.symmetric(
+          vertical: 5), // Increased vertical padding for ~32px height
       child: Row(
-      children: [
-        // 报警图标闪烁效果
-        if (isAlarm)
-          _AlarmIcon(icon: item.icon, color: TechColors.glowRed)
-        else
-          Icon(
-            item.icon,
-            size: 18,
-            color: color,
-          ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                item.label,
-                style: const TextStyle(
-                  color: TechColors.textSecondary,
-                  fontSize: 16,
-                ),
-              ),
-              // 显示阈值信息
-              if (item.threshold != null)
+        children: [
+          // 报警图标闪烁效果
+          if (isAlarm)
+            _AlarmIcon(icon: item.icon, color: TechColors.glowRed)
+          else
+            Icon(
+              item.icon,
+              size: 22, // Increased icon size
+              color: color,
+            ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  '阈值: ${item.threshold}${item.unit}',
-                  style: TextStyle(
-                    color: isAlarm ? TechColors.glowRed.withOpacity(0.8) : TechColors.textSecondary.withOpacity(0.6),
-                    fontSize: 14,
+                  item.label,
+                  style: const TextStyle(
+                    color: TechColors.textSecondary,
+                    fontSize: 15, // Increased font size
                   ),
                 ),
-            ],
-          ),
-        ),
-        // 报警标签
-        if (isAlarm)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: TechColors.glowRed.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: TechColors.glowRed),
-            ),
-            child: const Text(
-              '报警',
-              style: TextStyle(
-                color: TechColors.glowRed,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
+                // 移除阈值文字显示，只保留报警颜色，以减小高度
+              ],
             ),
           ),
-        Text(
-          item.value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Roboto Mono',
-            shadows: [
-              Shadow(
-                color: valueColor.withOpacity(0.5),
-                blurRadius: 8,
+          // 报警标签
+          if (isAlarm)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: TechColors.glowRed.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: TechColors.glowRed),
               ),
-            ],
+              child: const Text(
+                '报警',
+                style: TextStyle(
+                  color: TechColors.glowRed,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          Text(
+            item.value,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: 17, // Increased font size
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Roboto Mono',
+              shadows: [
+                Shadow(
+                  color: valueColor.withOpacity(0.5),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          item.unit,
-          style: TextStyle(
-            color: isAlarm ? TechColors.glowRed : TechColors.textSecondary,
-            fontSize: 16,
+          const SizedBox(width: 4),
+          Text(
+            item.unit,
+            style: TextStyle(
+              color: isAlarm ? TechColors.glowRed : TechColors.textSecondary,
+              fontSize: 17, // Increased font size
+            ),
           ),
-        ),
-      ],
-    ),
+        ],
+      ),
     );
+
+    // 2. 如果开启遮罩，叠加半透明层 (没有文字)
+    if (item.isMasked) {
+      return Stack(
+        children: [
+          content,
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6), // 60% 透明遮罩
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return content;
   }
 }
 
@@ -173,7 +188,8 @@ class _AlarmIcon extends StatefulWidget {
   State<_AlarmIcon> createState() => _AlarmIconState();
 }
 
-class _AlarmIconState extends State<_AlarmIcon> with SingleTickerProviderStateMixin {
+class _AlarmIconState extends State<_AlarmIcon>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -253,7 +269,7 @@ class FurnaceDataCard extends StatelessWidget {
     final color = item.iconColor ?? TechColors.glowCyan;
     final isAlarm = item.isAlarm;
     final valueColor = isAlarm ? TechColors.glowRed : TechColors.glowCyan;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -285,7 +301,9 @@ class FurnaceDataCard extends StatelessWidget {
                   Text(
                     '阈值: ${item.threshold}${item.unit}',
                     style: TextStyle(
-                      color: isAlarm ? TechColors.glowRed.withOpacity(0.8) : TechColors.textSecondary.withOpacity(0.6),
+                      color: isAlarm
+                          ? TechColors.glowRed.withOpacity(0.8)
+                          : TechColors.textSecondary.withOpacity(0.6),
                       fontSize: 14,
                     ),
                   ),
