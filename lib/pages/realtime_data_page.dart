@@ -3,6 +3,8 @@ import '../widgets/common/tech_line_widgets.dart';
 import '../widgets/realtime_data/data_card.dart';
 import '../widgets/realtime_data/valve_control.dart';
 import '../widgets/realtime_data/electrode_current_chart.dart';
+import '../widgets/realtime_data/info_card.dart';
+import '../widgets/realtime_data/smelting_control_button.dart';
 import '../models/app_state.dart';
 
 /// 实时数据页面
@@ -110,6 +112,36 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
     );
   }
 
+  /// 开始冶炼
+  Future<void> _startSmelting() async {
+    final now = DateTime.now();
+    final code = 'SM${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+    
+    setState(() {
+      _appState.isSmelting = true;
+      _appState.smeltingCode = code;
+    });
+    _appState.notifyListeners();
+    
+    _showOperationResult(
+      success: true,
+      message: '开始冶炼，轮次编码：$code',
+    );
+  }
+
+  /// 停止冶炼
+  Future<void> _stopSmelting() async {
+    setState(() {
+      _appState.isSmelting = false;
+    });
+    _appState.notifyListeners();
+    
+    _showOperationResult(
+      success: true,
+      message: '冶炼已停止，轮次编码：${_appState.smeltingCode}',
+    );
+  }
+
   /// 构建风机状态指示器
   Widget _buildFanStatusIndicator() {
     final fanRunning = _appState.fanRunning;
@@ -145,6 +177,114 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 构建PM10浓度卡片
+  Widget _buildPM10Card() {
+    final pm10 = _appState.pm10Value;
+    final threshold = _appState.pm10Threshold;
+    final isOverThreshold = pm10 > threshold;
+    final displayColor = isOverThreshold ? TechColors.statusAlarm : TechColors.glowCyan;
+
+    return InfoCard(
+      accentColor: displayColor,
+      items: [
+        InfoCardItem(
+          icon: Icons.air,
+          label: 'PM10浓度',
+          value: pm10.toStringAsFixed(1),
+          unit: 'mg/m³',
+          iconColor: displayColor,
+          valueColor: displayColor,
+          showWarning: isOverThreshold,
+          layout: InfoCardLayout.vertical,
+        ),
+      ],
+    );
+  }
+
+  /// 构建风机功率卡片
+  Widget _buildFanPowerCard() {
+    const power = 145.8;
+    const energy = 3245.6;
+
+    return InfoCard(
+      accentColor: TechColors.glowOrange,
+      items: [
+        InfoCardItem(
+          icon: Icons.flash_on,
+          label: '瞬时功率',
+          value: power.toStringAsFixed(1),
+          unit: 'kW',
+          iconColor: TechColors.glowOrange,
+          valueColor: TechColors.glowOrange,
+          layout: InfoCardLayout.horizontal,
+        ),
+        InfoCardItem(
+          icon: Icons.electric_meter,
+          label: '累计能耗',
+          value: energy.toStringAsFixed(1),
+          unit: 'kWh',
+          iconColor: TechColors.glowBlue,
+          valueColor: TechColors.glowBlue,
+          layout: InfoCardLayout.horizontal,
+        ),
+      ],
+    );
+  }
+
+  /// 构建电炉功率卡片
+  Widget _buildFurnacePowerCard() {
+    const power = 2850.0;
+    const energy = 12450.8;
+
+    return InfoCard(
+      accentColor: TechColors.glowOrange,
+      items: [
+        InfoCardItem(
+          icon: Icons.flash_on,
+          label: '瞬时功率',
+          value: power.toStringAsFixed(1),
+          unit: 'kW',
+          iconColor: TechColors.glowOrange,
+          valueColor: TechColors.glowOrange,
+          layout: InfoCardLayout.horizontal,
+        ),
+        InfoCardItem(
+          icon: Icons.electric_meter,
+          label: '累计能耗',
+          value: energy.toStringAsFixed(1),
+          unit: 'kWh',
+          iconColor: TechColors.glowBlue,
+          valueColor: TechColors.glowBlue,
+          layout: InfoCardLayout.horizontal,
+        ),
+      ],
+    );
+  }
+
+  /// 构建温度卡片
+  Widget _buildTemperatureCard() {
+    const temperature = 85.6;
+    const threshold = 80.0;
+    final isOverThreshold = temperature > threshold;
+    final displayColor = isOverThreshold ? TechColors.statusAlarm : TechColors.glowOrange;
+
+    return InfoCard(
+      accentColor: displayColor,
+      items: [
+        InfoCardItem(
+          icon: Icons.thermostat,
+          label: '入口温度',
+          value: temperature.toStringAsFixed(1),
+          unit: '℃',
+          iconColor: displayColor,
+          valueColor: displayColor,
+          showWarning: isOverThreshold,
+          layout: InfoCardLayout.vertical,
+        ),
+      ],
     );
   }
 
@@ -302,25 +442,37 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // Calculate furnace image size (reduced size)
-    final furnaceWidth = screenWidth * 0.42; // Reduced from 0.5
-
-    // Calculate left position to center it in the right 2/3 area
-    // Right area starts after the first column (1/3 of content width)
-    final contentWidth = screenWidth - 32; // 16 padding on each side
-    final colWidth = (contentWidth - 16) / 3; // 8 gap * 2 = 16
-    final rightAreaStart = 16 + colWidth + 8;
-    final rightAreaWidth = colWidth * 2 + 8;
-    final furnaceLeft = rightAreaStart + (rightAreaWidth - furnaceWidth) / 2;
+    // Calculate furnace image size (increased)
+    final furnaceWidth = screenWidth * 0.40;
+    
+    // Calculate valve panel width (smaller)
+    final valveWidth = screenWidth * 0.27;
+    
+    // Calculate right panel width (increased)
+    final rightPanelWidth = screenWidth * 0.32;
 
     return Container(
       color: TechColors.bgDeep,
       child: Stack(
         children: [
-          // 电极深度叠加在电炉图片上
+          // 冶炼控制按钮（电炉图片上方居中）
           Positioned(
-            left: furnaceLeft,
-            top: 20, // Moved down slightly
+            left: (screenWidth - furnaceWidth) / 2 - 50,
+            top: 50,
+            right: (screenWidth - furnaceWidth) / 2 + 50,
+            child: Center(
+              child: SmeltingControlButton(
+                isSmelting: _appState.isSmelting,
+                smeltingCode: _appState.smeltingCode,
+                onStart: _startSmelting,
+                onStop: _stopSmelting,
+              ),
+            ),
+          ),
+          // 电炉图片居中偏左显示
+          Positioned(
+            left: (screenWidth - furnaceWidth) / 2 - 30,
+            top: 150,
             width: furnaceWidth,
             child: AspectRatio(
               aspectRatio: 1.0, // 根据实际图片比例调整
@@ -354,208 +506,217 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
                     child: _ElectrodeWidget(
                         label: '电极3', depth: '123', current: '27.8'),
                   ),
+                  // 右下角：电炉功率卡片
+                  Positioned(
+                    right: 24,
+                    bottom:0,
+                    child: _buildFurnacePowerCard(),
+                  ),
                 ],
               ),
             ),
           ),
-          // 左侧面板组（料仓 + 蝶阀）- 第一列
+          // 左上角：蝶阀面板
           Positioned(
             left: 16,
             top: 16,
-            bottom: 16,
-            width: (screenWidth - 48) / 3,
-            child: SizedBox(
-              width: (screenWidth - 48) / 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            height: (screenHeight - 48) * 0.45,
+            width: valveWidth,
+            child: TechPanel(
+              title: '蝶阀',
+              height: double.infinity,
+              accentColor: TechColors.glowGreen,
+              padding: const EdgeInsets.all(8),
+              child: ValveControlPanel(
+                valves: _appState.valves
+                    .map((v) => ValveItem(
+                          id: v.id,
+                          name: v.name,
+                          status: v.status,
+                          openingDegree: v.openingDegree,
+                        ))
+                    .toList(),
+                onValveChanged: _onValveChanged,
+              ),
+            ),
+          ),
+          // 最右侧：除尘器面板（占据除冷却水外的剩余高度）
+          Positioned(
+            right: 16,
+            top: 16,
+            bottom: screenHeight * 0.27 ,
+            width: rightPanelWidth,
+            child: TechPanel(
+              title: '除尘器',
+              height: double.infinity,
+              accentColor: TechColors.glowCyan,
+              padding: const EdgeInsets.all(8),
+              headerActions: [
+                _buildFanStatusIndicator(),
+              ],
+              child: Stack(
                 children: [
-                  // 重量面板
-                  TechPanel(
-                    title: '重量',
-                    accentColor: TechColors.glowOrange,
-                    padding: const EdgeInsets.all(8),
-                    child: DataCard(
-                      items: const [
-                        DataItem(
-                            icon: Icons.scale,
-                            label: '料仓重量',
-                            value: '2350',
-                            unit: 'kg',
-                            iconColor: TechColors.glowOrange),
-                        DataItem(
-                            icon: Icons.arrow_downward,
-                            label: '投料重量',
-                            value: '185',
-                            unit: 'kg',
-                            iconColor: TechColors.glowOrange),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // 料仓面板
-                  TechPanel(
-                    title: '料仓',
-                    accentColor: TechColors.glowCyan,
-                    padding: const EdgeInsets.all(8),
-                    headerActions: [
-                      _buildFanStatusIndicator(),
-                    ],
-                    child: DataCard(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      items: const [
-                        DataItem(
-                            icon: Icons.thermostat,
-                            label: '除尘器入口温度',
-                            value: '85.6',
-                            unit: '℃',
-                            iconColor: TechColors.glowOrange,
-                            threshold: 80.0,
-                            isAboveThreshold: true),
-                        DataItem(
-                            icon: Icons.air,
-                            label: '除尘器排风口 PM10 浓度',
-                            value: '12.3',
-                            unit: 'µg/m³',
-                            iconColor: TechColors.glowGreen,
-                            threshold: 10.0,
-                            isAboveThreshold: true),
-                        DataItem(
-                            icon: Icons.flash_on,
-                            label: '除尘器风机瞬时功率',
-                            value: '45.2',
-                            unit: 'kW',
-                            iconColor: TechColors.glowCyan),
-                        DataItem(
-                            icon: Icons.electric_meter,
-                            label: '除尘器风机累计能耗',
-                            value: '1280.5',
-                            unit: 'kWh',
-                            iconColor: TechColors.glowBlue),
-                        DataItem(
-                            icon: Icons.vibration,
-                            label: '除尘器风机振动幅值',
-                            value: '2.8',
-                            unit: 'mm/s',
-                            iconColor: TechColors.glowRed,
-                            isMasked: true),
-                        DataItem(
-                            icon: Icons.graphic_eq,
-                            label: '除尘器风机振动频谱',
-                            value: '50.0',
-                            unit: 'Hz',
-                            iconColor: TechColors.statusWarning,
-                            isMasked: true),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // 蝶阀面板
-                  Expanded(
-                    child: TechPanel(
-                      title: '蝶阀',
+                  // 背景图片
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.asset(
+                      'assets/images/dust_collector.png',
+                      fit: BoxFit.contain,
+                      width: double.infinity,
                       height: double.infinity,
-                      accentColor: TechColors.glowGreen,
-                      padding: const EdgeInsets.all(8),
-                      child: ValveControlPanel(
-                        valves: _appState.valves
-                            .map((v) => ValveItem(
-                                  id: v.id,
-                                  name: v.name,
-                                  status: v.status,
-                                  openingDegree: v.openingDegree,
-                                ))
-                            .toList(),
-                        onValveChanged: _onValveChanged,
-                      ),
                     ),
+                  ),
+                  // 左上角：PM10浓度卡片
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    child: _buildPM10Card(),
+                  ),
+                  // 左侧居中温度卡片
+                  Positioned(
+                    left: 150,
+                    top: 0,
+                    bottom: 70,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildTemperatureCard(),
+                    ),
+                  ),
+                  // 左下角：风机功率卡片
+                  Positioned(
+                    left: 8,
+                    bottom: 8,
+                    child: _buildFanPowerCard(),
                   ),
                 ],
               ),
             ),
           ),
-          // 梯形图和电炉面板 - 第二列（左右布局，在背景图下方）
+          // 左侧中部：梯形图（电极电流图表）
           Positioned(
-            left: 16 + (screenWidth - 48) / 3 + 8,
-            top: screenHeight * 0.5 + 16, // Start from middle
-            bottom: 16, // Fill to bottom
-            width: (screenWidth - 48) / 3 * 2 + 8,
-            // height removed
-            child: Row(
-              children: [
-                // 梯形图（电极电流图表）
-                SizedBox(
-                  width: (screenWidth - 48) / 3 - 2,
-                  height: double.infinity, // Fill parent height
-                  child: TechPanel(
-                    height: double.infinity,
-                    accentColor: TechColors.glowOrange,
-                    padding: const EdgeInsets.all(8),
-                    child: const ElectrodeCurrentChart(
-                      electrodes: [
-                        ElectrodeData(
-                            name: '电极1', setValue: 30.0, actualValue: 28.5),
-                        ElectrodeData(
-                            name: '电极2', setValue: 30.0, actualValue: 29.2),
-                        ElectrodeData(
-                            name: '电极3', setValue: 30.0, actualValue: 27.8),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // 电炉面板
-                SizedBox(
-                  width: (screenWidth - 48) / 3 - 2,
-                  height: double.infinity, // Fill parent height
-                  child: TechPanel(
-                    height: double.infinity,
-                    title: '电炉',
-                    accentColor: TechColors.glowOrange,
-                    padding: const EdgeInsets.all(8),
-                    child: DataCard(
-                      items: const [
-                        DataItem(
-                            icon: Icons.compress,
-                            label: '前置过滤器进出口压差',
-                            value: '125.6',
-                            unit: 'Pa',
-                            iconColor: TechColors.glowBlue,
-                            threshold: 100.0,
-                            isAboveThreshold: true),
-                        DataItem(
-                            icon: Icons.water,
-                            label: '冷却水流速',
-                            value: '2.5',
-                            unit: 'm³/h',
-                            iconColor: TechColors.glowCyan,
-                            threshold: 2.0,
-                            isAboveThreshold: false),
-                        DataItem(
-                            icon: Icons.opacity,
-                            label: '冷却水水压',
-                            value: '0.18',
-                            unit: 'MPa',
-                            iconColor: TechColors.glowCyan,
-                            threshold: 0.15,
-                            isAboveThreshold: false),
-                        DataItem(
-                            icon: Icons.flash_on,
-                            label: '瞬时功率',
-                            value: '320.5',
-                            unit: 'kW',
-                            iconColor: TechColors.glowOrange),
-                        DataItem(
-                            icon: Icons.electric_meter,
-                            label: '累计能耗',
-                            value: '15800',
-                            unit: 'kWh',
-                            iconColor: TechColors.glowBlue),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            left: 16,
+            top: (screenHeight - 48) * 0.45 + 16 + 10,
+            height: (screenHeight - 48) * 0.34,
+            width: valveWidth,
+            child: TechPanel(
+              height: double.infinity,
+              accentColor: TechColors.glowOrange,
+              padding: const EdgeInsets.all(8),
+              child: const ElectrodeCurrentChart(
+                electrodes: [
+                  ElectrodeData(
+                      name: '电极1', setValue: 30.0, actualValue: 28.5),
+                  ElectrodeData(
+                      name: '电极2', setValue: 30.0, actualValue: 29.2),
+                  ElectrodeData(
+                      name: '电极3', setValue: 30.0, actualValue: 27.8),
+                ],
+              ),
+            ),
+          ),
+          // 右侧下部：炉皮冷却水面板（自适应内容高度）
+          Positioned(
+            right: 16,
+            bottom: 16,
+            width: rightPanelWidth,
+            child: TechPanel(
+              title: '炉皮冷却水',
+              accentColor: TechColors.glowOrange,
+              padding: const EdgeInsets.all(8),
+              child: DataCard(
+                items: const [
+                  DataItem(
+                      icon: Icons.compress,
+                      label: '前置过滤器进出口压差',
+                      value: '125.6',
+                      unit: 'Pa',
+                      iconColor: TechColors.glowBlue,
+                      threshold: 100.0,
+                      isAboveThreshold: true),
+                  DataItem(
+                      icon: Icons.water,
+                      label: '冷却水流速',
+                      value: '2.5',
+                      unit: 'm³/h',
+                      iconColor: TechColors.glowOrange,
+                      threshold: 2.0,
+                      isAboveThreshold: false),
+                  DataItem(
+                      icon: Icons.opacity,
+                      label: '冷却水水压',
+                      value: '0.18',
+                      unit: 'MPa',
+                      iconColor: TechColors.glowBlue,
+                      threshold: 0.15,
+                      isAboveThreshold: false),
+                  DataItem(
+                      icon: Icons.water_drop,
+                      label: '累计用水',
+                      value: '1256.8',
+                      unit: 'm³',
+                      iconColor: TechColors.glowCyan),
+                ],
+              ),
+            ),
+          ),
+          // 中间列底部：炉盖冷却水面板
+          Positioned(
+            left: valveWidth + 28,
+            right: rightPanelWidth + 28,
+            bottom: 16,
+            child: TechPanel(
+              title: '炉盖冷却水',
+              accentColor: TechColors.glowOrange,
+              padding: const EdgeInsets.all(8),
+              child: DataCard(
+                items: const [
+                  DataItem(
+                      icon: Icons.water,
+                      label: '冷却水流速',
+                      value: '3.5',
+                      unit: 'm³/h',
+                      iconColor: TechColors.glowOrange),
+                  DataItem(
+                      icon: Icons.opacity,
+                      label: '冷却水水压',
+                      value: '0.18',
+                      unit: 'MPa',
+                      iconColor: TechColors.glowBlue),
+                  DataItem(
+                      icon: Icons.water_drop,
+                      label: '累计用水',
+                      value: '856.4',
+                      unit: 'm³',
+                      iconColor: TechColors.glowCyan),
+                ],
+              ),
+            ),
+          ),
+          // 左侧底部：重量面板
+          Positioned(
+            left: 16,
+            bottom: 16,
+            width: valveWidth,
+            child: TechPanel(
+              title: '重量',
+              accentColor: TechColors.glowOrange,
+              padding: const EdgeInsets.all(8),
+              child: DataCard(
+                items: const [
+                  DataItem(
+                      icon: Icons.scale,
+                      label: '料仓重量',
+                      value: '2350',
+                      unit: 'kg',
+                      iconColor: TechColors.glowOrange),
+                  DataItem(
+                      icon: Icons.arrow_downward,
+                      label: '投料重量',
+                      value: '185',
+                      unit: 'kg',
+                      iconColor: TechColors.glowOrange),
+                ],
+              ),
             ),
           ),
         ],
@@ -663,13 +824,13 @@ class _ElectrodeWidget extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.bolt, color: TechColors.glowCyan, size: 16),
+              Icon(Icons.bolt, color: TechColors.glowCyan, size: 18),
               const SizedBox(width: 4),
               Text(
                 label,
                 style: const TextStyle(
                   color: TechColors.textPrimary,
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -684,14 +845,14 @@ class _ElectrodeWidget extends StatelessWidget {
                 '深度 ',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: 14,
                 ),
               ),
               Text(
                 depth,
                 style: TextStyle(
                   color: TechColors.glowCyan,
-                  fontSize: 15,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Roboto Mono',
                   shadows: [
@@ -707,7 +868,7 @@ class _ElectrodeWidget extends StatelessWidget {
                 'mm',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: 14,
                 ),
               ),
             ],
@@ -721,14 +882,14 @@ class _ElectrodeWidget extends StatelessWidget {
                 '电流 ',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: 14,
                 ),
               ),
               Text(
                 current,
                 style: TextStyle(
                   color: TechColors.glowOrange,
-                  fontSize: 15,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Roboto Mono',
                   shadows: [
@@ -744,7 +905,7 @@ class _ElectrodeWidget extends StatelessWidget {
                 'kA',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: 14,
                 ),
               ),
             ],

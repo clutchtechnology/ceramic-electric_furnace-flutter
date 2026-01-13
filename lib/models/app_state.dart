@@ -13,6 +13,10 @@ class AppState extends ChangeNotifier {
   // 数据大屏页面状态
   bool fanRunning = true;
   bool vibrationFault = true;
+  double pm10Value = 45.2;
+  double pm10Threshold = 50.0;
+  bool isSmelting = false;
+  String smeltingCode = '';
   List<ValveState> valves = [
     ValveState(id: '1', name: '1号', status: ValveStatus.open, openingDegree: 75),
     ValveState(id: '2', name: '2号', status: ValveStatus.closed),

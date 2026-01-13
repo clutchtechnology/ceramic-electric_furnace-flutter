@@ -24,7 +24,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(4),
           child: Stack(
             children: [
               Column(
@@ -32,16 +32,16 @@ class ElectrodeCurrentChart extends StatelessWidget {
                 children: [
                   // Y轴标签
                   const Padding(
-                    padding: EdgeInsets.only(left: 8),
+                    padding: EdgeInsets.only(left: 4),
                     child: Text(
                       '电流 (kA)',
                       style: TextStyle(
                         color: TechColors.textSecondary,
-                        fontSize: 12,
+                        fontSize: 14,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   // 图表主体
                   Expanded(
                     child: Row(
@@ -49,7 +49,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       children: [
                         // Y轴刻度
                         _buildYAxis(maxValue),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 4),
                         // 柱状图
                         Expanded(
                           child: Row(
@@ -64,7 +64,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                 ],
               ),
               // 图例 - 右上角
@@ -113,7 +113,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
       label,
       style: const TextStyle(
         color: TechColors.textSecondary,
-        fontSize: 10,
+        fontSize: 12,
       ),
     );
   }
@@ -122,7 +122,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
   Widget _buildElectrodeGroup(ElectrodeData electrode, double maxValue) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -142,7 +142,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       label: electrode.setValue.toStringAsFixed(1),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   // 实际值柱
                   SizedBox(
                     width: 25,
@@ -156,13 +156,13 @@ class ElectrodeCurrentChart extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             // X轴标签
             Text(
               electrode.name,
               style: const TextStyle(
                 color: TechColors.textPrimary,
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -194,7 +194,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: color,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -273,7 +273,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
           label,
           style: TextStyle(
             color: color,
-            fontSize: 12,
+            fontSize: 14,
           ),
         ),
       ],

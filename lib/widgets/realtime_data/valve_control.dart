@@ -49,7 +49,7 @@ class ValveControl extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: 10, vertical: 4), // Further reduced padding
+          horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
         color: TechColors.bgMedium.withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
@@ -88,7 +88,7 @@ class ValveControl extends StatelessWidget {
                 name,
                 style: const TextStyle(
                   color: TechColors.textPrimary,
-                  fontSize: 15, // Slightly smaller text
+                  fontSize: 17,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -99,7 +99,7 @@ class ValveControl extends StatelessWidget {
                   '${openingDegree.toStringAsFixed(0)}%',
                   style: TextStyle(
                     color: displayColor,
-                    fontSize: 15, // Slightly smaller text
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'RobotoMono',
                   ),
@@ -128,7 +128,7 @@ class ValveControl extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4), // Tighter gap
+          const SizedBox(height: 10),
           // 第二行：进度条
           ClipRRect(
             borderRadius: BorderRadius.circular(4), // Slightly smaller radius
@@ -153,7 +153,7 @@ class ValveControl extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: isActive ? activeColor.withOpacity(0.2) : TechColors.bgDark,
           borderRadius: BorderRadius.circular(4),
@@ -173,7 +173,7 @@ class ValveControl extends StatelessWidget {
           label,
           style: TextStyle(
             color: isActive ? activeColor : TechColors.textSecondary,
-            fontSize: 12,
+            fontSize: 15,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           ),
         ),

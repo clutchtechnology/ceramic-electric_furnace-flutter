@@ -41,7 +41,7 @@ class DataCard extends StatelessWidget {
   const DataCard({
     super.key,
     required this.items,
-    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    this.padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
   });
 
   @override
@@ -81,7 +81,7 @@ class DataCard extends StatelessWidget {
     // 1. 构建正常显示的内容
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(
-          vertical: 5), // Increased vertical padding for ~32px height
+          vertical: 3), // Reduced vertical padding
       child: Row(
         children: [
           // 报警图标闪烁效果
@@ -90,7 +90,7 @@ class DataCard extends StatelessWidget {
           else
             Icon(
               item.icon,
-              size: 22, // Increased icon size
+              size: 26,
               color: color,
             ),
           const SizedBox(width: 8),
@@ -103,7 +103,7 @@ class DataCard extends StatelessWidget {
                   item.label,
                   style: const TextStyle(
                     color: TechColors.textSecondary,
-                    fontSize: 15, // Increased font size
+                    fontSize: 18,
                   ),
                 ),
                 // 移除阈值文字显示，只保留报警颜色，以减小高度
@@ -124,7 +124,7 @@ class DataCard extends StatelessWidget {
                 '报警',
                 style: TextStyle(
                   color: TechColors.glowRed,
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -133,7 +133,7 @@ class DataCard extends StatelessWidget {
             item.value,
             style: TextStyle(
               color: valueColor,
-              fontSize: 17, // Increased font size
+              fontSize: 22,
               fontWeight: FontWeight.w600,
               fontFamily: 'Roboto Mono',
               shadows: [
@@ -149,7 +149,7 @@ class DataCard extends StatelessWidget {
             item.unit,
             style: TextStyle(
               color: isAlarm ? TechColors.glowRed : TechColors.textSecondary,
-              fontSize: 17, // Increased font size
+              fontSize: 20,
             ),
           ),
         ],

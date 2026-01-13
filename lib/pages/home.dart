@@ -4,7 +4,7 @@ import 'package:window_manager/window_manager.dart';
 import 'dart:async';
 import '../widgets/common/tech_line_widgets.dart';
 import 'realtime_data_page.dart';
-import 'realtime_monitor_page.dart';
+// import 'realtime_monitor_page.dart'; // 暂时隐藏
 import 'history_curve_page.dart';
 import 'alarm_record_page.dart';
 import 'settings_page.dart';
@@ -38,10 +38,10 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 index: _selectedNavIndex,
                 children: const [
                   RealtimeDataPage(), // 0: 实时数据
-                  RealtimeMonitorPage(), // 1: 实时监控
-                  HistoryCurvePage(), // 2: 历史曲线
-                  AlarmRecordPage(), // 3: 报警记录
-                  SettingsPage(), // 4: 系统设置
+                  // RealtimeMonitorPage(), // 1: 实时监控 (暂时隐藏)
+                  HistoryCurvePage(), // 1: 历史曲线
+                  AlarmRecordPage(), // 2: 报警记录
+                  SettingsPage(), // 3: 系统设置
                 ],
               ),
             ),
@@ -55,7 +55,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
 
   /// 顶部导航栏
   Widget _buildTopNavBar() {
-    final navItems = ['数据大屏', '实时监控', '历史曲线', '报警记录'];
+    final navItems = ['数据大屏', '历史曲线', '报警记录'];
 
     return DragToMoveArea(
       child: Container(
@@ -97,7 +97,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                     '3号电炉系统',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 2,
                     ),
@@ -110,6 +110,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             ...List.generate(navItems.length, (index) {
               final isSelected = _selectedNavIndex == index;
               return GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () => setState(() => _selectedNavIndex = index),
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
@@ -132,7 +133,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                       color: isSelected
                           ? TechColors.glowCyan
                           : TechColors.textSecondary,
-                      fontSize: 13,
+                      fontSize: 15,
                       fontWeight:
                           isSelected ? FontWeight.w500 : FontWeight.w400,
                     ),
@@ -146,10 +147,10 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             const SizedBox(width: 16),
             // 系统配置按钮
             IconButton(
-              onPressed: () => setState(() => _selectedNavIndex = 5),
+              onPressed: () => setState(() => _selectedNavIndex = 3),
               icon: Icon(
                 Icons.settings,
-                color: _selectedNavIndex == 5
+                color: _selectedNavIndex == 3
                     ? TechColors.glowCyan
                     : TechColors.textSecondary,
                 size: 20,
@@ -205,7 +206,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               dateStr,
               style: const TextStyle(
                 color: TechColors.textSecondary,
-                fontSize: 12,
+                fontSize: 14,
                 fontFamily: 'Roboto Mono',
               ),
             ),
@@ -223,7 +224,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 timeStr,
                 style: TextStyle(
                   color: TechColors.glowCyan,
-                  fontSize: 14,
+                  fontSize: 16,
                   fontFamily: 'Roboto Mono',
                   fontWeight: FontWeight.w500,
                   shadows: [
