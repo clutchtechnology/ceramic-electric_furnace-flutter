@@ -149,7 +149,7 @@ class _SettingsPageState extends State<SettingsPage> {
             '配置中心',
             style: TextStyle(
               color: TechColors.textPrimary,
-              fontSize: 16,
+              fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -184,7 +184,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       color: isSelected
                           ? TechColors.glowCyan
                           : TechColors.textSecondary,
-                      size: 18,
+                      size: 22,
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -193,7 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         color: isSelected
                             ? TechColors.glowCyan
                             : TechColors.textSecondary,
-                        fontSize: 13,
+                        fontSize: 16,
                         fontWeight:
                             isSelected ? FontWeight.w500 : FontWeight.w400,
                       ),
@@ -229,15 +229,15 @@ class _SettingsPageState extends State<SettingsPage> {
               _appState.systemConfigTabIndex == 0 ? '系统配置' : '报警阈值',
               style: const TextStyle(
                 color: TechColors.textPrimary,
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
             ElevatedButton.icon(
               onPressed: _saveSettings,
-              icon: const Icon(Icons.save, size: 18),
-              label: const Text('保存配置'),
+              icon: const Icon(Icons.save, size: 22),
+              label: const Text('保存配置', style: TextStyle(fontSize: 16)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: TechColors.glowCyan.withOpacity(0.2),
                 foregroundColor: TechColors.glowCyan,
@@ -507,13 +507,13 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           Row(
             children: [
-              Icon(icon, color: accentColor, size: 20),
+              Icon(icon, color: accentColor, size: 24),
               const SizedBox(width: 10),
               Text(
                 title,
                 style: TextStyle(
                   color: accentColor,
-                  fontSize: 15,
+                  fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -535,7 +535,7 @@ class _SettingsPageState extends State<SettingsPage> {
           label,
           style: const TextStyle(
             color: TechColors.textSecondary,
-            fontSize: 12,
+            fontSize: 15,
           ),
         ),
         const SizedBox(height: 6),
@@ -543,7 +543,7 @@ class _SettingsPageState extends State<SettingsPage> {
           controller: controller,
           style: const TextStyle(
             color: TechColors.textPrimary,
-            fontSize: 13,
+            fontSize: 16,
           ),
           decoration: InputDecoration(
             filled: true,
@@ -578,7 +578,7 @@ class _SettingsPageState extends State<SettingsPage> {
           '密码',
           style: TextStyle(
             color: TechColors.textSecondary,
-            fontSize: 12,
+            fontSize: 15,
           ),
         ),
         const SizedBox(height: 6),
@@ -587,7 +587,7 @@ class _SettingsPageState extends State<SettingsPage> {
           obscureText: !_showPassword,
           style: const TextStyle(
             color: TechColors.textPrimary,
-            fontSize: 13,
+            fontSize: 16,
           ),
           decoration: InputDecoration(
             filled: true,
@@ -611,7 +611,7 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icon(
                 _showPassword ? Icons.visibility : Icons.visibility_off,
                 color: TechColors.textSecondary,
-                size: 18,
+                size: 22,
               ),
               onPressed: () => setState(() => _showPassword = !_showPassword),
             ),
@@ -635,7 +635,7 @@ class _SettingsPageState extends State<SettingsPage> {
           label,
           style: const TextStyle(
             color: TechColors.textSecondary,
-            fontSize: 12,
+            fontSize: 15,
           ),
         ),
         const SizedBox(height: 6),
@@ -657,7 +657,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           item,
                           style: const TextStyle(
                             color: TechColors.textPrimary,
-                            fontSize: 13,
+                            fontSize: 16,
                           ),
                         ),
                       ))
@@ -681,9 +681,9 @@ class _SettingsPageState extends State<SettingsPage> {
       SnackBar(
         content: const Row(
           children: [
-            Icon(Icons.check_circle, color: TechColors.glowGreen),
+            Icon(Icons.check_circle, color: TechColors.glowGreen, size: 22),
             SizedBox(width: 8),
-            Text('配置保存成功'),
+            Text('配置保存成功', style: TextStyle(fontSize: 16)),
           ],
         ),
         backgroundColor: TechColors.bgDark,

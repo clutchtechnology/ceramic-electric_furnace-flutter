@@ -8,6 +8,7 @@ import 'realtime_data_page.dart';
 import 'history_curve_page.dart';
 import 'alarm_record_page.dart';
 import 'settings_page.dart';
+import 'pump_room_status_page.dart';
 
 /// 智能生产线数字孪生系统页面
 /// 参考工业 SCADA/数字孪生可视化设计
@@ -41,7 +42,8 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                   // RealtimeMonitorPage(), // 1: 实时监控 (暂时隐藏)
                   HistoryCurvePage(), // 1: 历史曲线
                   AlarmRecordPage(), // 2: 报警记录
-                  SettingsPage(), // 3: 系统设置
+                  PumpRoomStatusPage(), // 3: 泵房状态
+                  SettingsPage(), // 4: 系统设置
                 ],
               ),
             ),
@@ -55,7 +57,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
 
   /// 顶部导航栏
   Widget _buildTopNavBar() {
-    final navItems = ['数据大屏', '历史曲线', '报警记录'];
+    final navItems = ['数据大屏', '历史曲线', '报警记录', '泵房状态'];
 
     return DragToMoveArea(
       child: Container(
@@ -147,10 +149,10 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             const SizedBox(width: 16),
             // 系统配置按钮
             IconButton(
-              onPressed: () => setState(() => _selectedNavIndex = 3),
+              onPressed: () => setState(() => _selectedNavIndex = 4),
               icon: Icon(
                 Icons.settings,
-                color: _selectedNavIndex == 3
+                color: _selectedNavIndex == 4
                     ? TechColors.glowCyan
                     : TechColors.textSecondary,
                 size: 20,

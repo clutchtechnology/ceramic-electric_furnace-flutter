@@ -455,20 +455,6 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
       color: TechColors.bgDeep,
       child: Stack(
         children: [
-          // 冶炼控制按钮（电炉图片上方居中）
-          Positioned(
-            left: (screenWidth - furnaceWidth) / 2 - 50,
-            top: 50,
-            right: (screenWidth - furnaceWidth) / 2 + 50,
-            child: Center(
-              child: SmeltingControlButton(
-                isSmelting: _appState.isSmelting,
-                smeltingCode: _appState.smeltingCode,
-                onStart: _startSmelting,
-                onStop: _stopSmelting,
-              ),
-            ),
-          ),
           // 电炉图片居中偏左显示
           Positioned(
             left: (screenWidth - furnaceWidth) / 2 - 30,
@@ -513,6 +499,20 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
                     child: _buildFurnacePowerCard(),
                   ),
                 ],
+              ),
+            ),
+          ),
+          // 冶炼控制按钮（电炉图片容器外，居中显示）
+          Positioned(
+            left: (screenWidth - furnaceWidth) / 2 - 32,
+            top: 60,
+            width: furnaceWidth,
+            child: Center(
+              child: SmeltingControlButton(
+                isSmelting: _appState.isSmelting,
+                smeltingCode: _appState.smeltingCode,
+                onStart: _startSmelting,
+                onStop: _stopSmelting,
               ),
             ),
           ),

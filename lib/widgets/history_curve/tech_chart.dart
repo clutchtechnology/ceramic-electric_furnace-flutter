@@ -71,10 +71,10 @@ class _TechLineChartState extends State<TechLineChart> {
 
     return Padding(
       padding: const EdgeInsets.only(
-        left: 8, // 左边距，留给Y轴标签
-        right: 16, // 右边距，留给X轴最后一个标签
-        top: 24, // 顶部留给 Tooltip 空间
-        bottom: 10,
+        left: 4, // 左边距，留给Y轴标签
+        right: 8, // 右边距，留给X轴最后一个标签
+        top: 12, // 顶部留给 Tooltip 空间
+        bottom: 4,
       ),
       child: LineChart(
         LineChartData(
@@ -103,7 +103,7 @@ class _TechLineChartState extends State<TechLineChart> {
                     TextStyle(
                       color: seriesColors[seriesIndex % seriesColors.length],
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 16,
                     ),
                   );
                 }).toList();
@@ -138,7 +138,7 @@ class _TechLineChartState extends State<TechLineChart> {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 22,
+                reservedSize: 28,
                 interval: (seriesList.first.length / 6).ceilToDouble(), // 约6个标签
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
@@ -149,7 +149,7 @@ class _TechLineChartState extends State<TechLineChart> {
                         seriesList.first[index].label,
                         style: const TextStyle(
                           color: TechColors.textSecondary,
-                          fontSize: 10,
+                          fontSize: 15,
                         ),
                       ),
                     );
@@ -163,19 +163,19 @@ class _TechLineChartState extends State<TechLineChart> {
               axisNameWidget: widget.yAxisLabel != null
                   ? Text(widget.yAxisLabel!,
                       style: const TextStyle(
-                          color: TechColors.textSecondary, fontSize: 10))
+                          color: TechColors.textSecondary, fontSize: 15))
                   : null,
               axisNameSize: 20,
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 40,
+                reservedSize: 52,
                 interval: (effectiveMaxY - effectiveMinY) / 5,
                 getTitlesWidget: (value, meta) {
                   return Text(
                     value.toStringAsFixed(1),
                     style: const TextStyle(
                       color: TechColors.textSecondary,
-                      fontSize: 10,
+                      fontSize: 15,
                     ),
                     textAlign: TextAlign.right,
                   );

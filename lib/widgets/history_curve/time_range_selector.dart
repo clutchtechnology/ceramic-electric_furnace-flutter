@@ -37,7 +37,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
             '至',
             style: TextStyle(
               color: TechColors.textSecondary,
-              fontSize: 12,
+              fontSize: 14,
             ),
           ),
         ),
@@ -78,7 +78,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
               label,
               style: TextStyle(
                 color: widget.accentColor,
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -93,7 +93,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
               timeStr,
               style: TextStyle(
                 color: TechColors.textPrimary,
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
