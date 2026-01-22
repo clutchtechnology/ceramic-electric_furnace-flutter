@@ -43,7 +43,7 @@ class ValveStatusIndicator extends StatelessWidget {
                 '$valveId#',
                 style: const TextStyle(
                   color: TechColors.textPrimary,
-                  fontSize: 32,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                   height: 1.0,
                 ),
@@ -53,13 +53,13 @@ class ValveStatusIndicator extends StatelessWidget {
           const SizedBox(width: 4),
           // 中间：仪表盘
           Expanded(
-            flex: 2,
+            flex: 3,
             child: _buildGaugeDial(statusColor),
           ),
           const SizedBox(width: 8),
-          // 右侧：按钮组
+          // 右侧：状态显示
           Expanded(
-            flex: 4,
+            flex: 3,
             child: _buildStatusButtons(),
           ),
         ],
@@ -71,8 +71,8 @@ class ValveStatusIndicator extends StatelessWidget {
   Widget _buildGaugeDial(Color statusColor) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 进一步缩小仪表盘大小，确保不超出卡片
-        final size = constraints.maxHeight * 0.85;
+        // 扩大仪表盘大小，充分利用可用空间
+        final size = constraints.maxHeight * 0.95;
         return SizedBox(
           width: size,
           height: size,
@@ -87,22 +87,22 @@ class ValveStatusIndicator extends StatelessWidget {
     );
   }
 
-  /// 构建状态按钮组 (关/停/开)
+  /// 构建状态显示组 (关/停/开)
   Widget _buildStatusButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildStatusButton('关', '10', currentStatus == '10'),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         _buildStatusButton(
             '停', '00', currentStatus == '00' || currentStatus == '11'),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         _buildStatusButton('开', '01', currentStatus == '01'),
       ],
     );
   }
 
-  /// 构建单个状态按钮
+  /// 构建单个状态显示器
   Widget _buildStatusButton(String label, String statusCode, bool isActive) {
     Color buttonColor;
     if (isActive) {
@@ -114,18 +114,18 @@ class ValveStatusIndicator extends StatelessWidget {
         buttonColor = TechColors.glowCyan;
       }
     } else {
-      buttonColor = TechColors.textSecondary.withOpacity(0.4);
+      buttonColor = TechColors.textSecondary.withOpacity(0.3);
     }
 
     return Expanded(
       child: Container(
-        height: 35,
+        height: 28,
         decoration: BoxDecoration(
-          color: isActive ? buttonColor.withOpacity(0.2) : Colors.transparent,
+          color: isActive ? buttonColor.withOpacity(0.15) : TechColors.bgDeep.withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: isActive ? buttonColor : TechColors.borderDark,
-            width: 1,
+            color: isActive ? buttonColor : TechColors.borderDark.withOpacity(0.5),
+            width: isActive ? 1.5 : 0.5,
           ),
         ),
         child: Center(
@@ -133,7 +133,7 @@ class ValveStatusIndicator extends StatelessWidget {
             label,
             style: TextStyle(
               color: buttonColor,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
             ),
           ),

@@ -16,6 +16,7 @@ import '../api/valve_api.dart';
 import '../api/control_api.dart'; // 控制API
 import '../tools/valve_calculator.dart';
 import '../api/api.dart';
+import '../services/alarm_service.dart';
 
 /// 实时数据页面
 /// 用于显示智能生产线数字孪生系统的实时数据
@@ -31,6 +32,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
   late AppState _appState;
   final ApiClient _apiClient = ApiClient();
   final ValveApi _valveApi = ValveApi();
+  final AlarmService _alarmService = AlarmService();
 
   /// 是否正在刷新数据
   bool isRefreshing = false;
@@ -72,6 +74,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
   @override
   void dispose() {
     _stopPolling();
+    _alarmService.dispose();
     _appState.removeListener(_onStateChanged);
     super.dispose();
   }
@@ -119,6 +122,10 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
       if (data != null && mounted) {
         setState(() {
           _realtimeData = RealtimeBatchData.fromJson(data);
+        
+        // 检查报警状态并播放声音
+        _checkAlarmStatus();
+        
         });
         debugPrint('[RealtimeDataPage] 实时数据刷新成功');
       } else {
@@ -290,6 +297,65 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     );
   }
 
+  /// 检查报警状态
+  void _checkAlarmStatus() {
+    if (!_appState.isSmelting) {
+      // 未冶炼时不检查报警
+      _alarmService.stopAlarm();
+      return;
+    }
+
+    bool hasAlarm = false;
+
+    // 检查电极深度报警（低于150mm或高于1960mm）
+    for (var electrode in _realtimeData.electrodes) {
+      if (electrode.depthMm < 150 || electrode.depthMm > 1960) {
+        hasAlarm = true;
+        break;
+      }
+    }
+
+    // 检查电极电流报警（±15%）
+    const double currentSetpoint = 2989.0;
+    const double currentMinThreshold = currentSetpoint * 0.85;
+    const double currentMaxThreshold = currentSetpoint * 1.15;
+    
+    for (var electrode in _realtimeData.electrodes) {
+      if (electrode.currentA < currentMinThreshold || 
+          electrode.currentA > currentMaxThreshold) {
+        hasAlarm = true;
+        break;
+      }
+    }
+
+    // 检查冷却水流速报警（低于2.0）
+    if (_realtimeData.cooling.furnaceShell.flowM3h < 2.0) {
+      hasAlarm = true;
+    }
+
+    // 检查冷却水压报警（低于0.15）
+    if (_realtimeData.cooling.furnaceShell.pressureMPa < 0.15) {
+      hasAlarm = true;
+    }
+
+    // 检查炉盖冷却水流速报警（低于2.0）
+    if (_realtimeData.cooling.furnaceCover.flowM3h < 2.0) {
+      hasAlarm = true;
+    }
+
+    // 检查炉盖冷却水压报警（低于0.15）
+    if (_realtimeData.cooling.furnaceCover.pressureMPa < 0.15) {
+      hasAlarm = true;
+    }
+
+    // 根据报警状态控制声音
+    if (hasAlarm && !_alarmService.isPlaying) {
+      _alarmService.startAlarm();
+    } else if (!hasAlarm && _alarmService.isPlaying) {
+      _alarmService.stopAlarm();
+    }
+  }
+
   /// 开始冶炼
   Future<void> _startSmelting() async {
     // 生成默认批次号 (SM+日期+时间)
@@ -368,15 +434,14 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
 
   /// 构建风机状态指示器
   Widget _buildFanStatusIndicator() {
-    final fanRunning = _appState.fanRunning;
+    // 除尘器未接入
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: (fanRunning ? TechColors.statusNormal : TechColors.statusAlarm)
-            .withOpacity(0.15),
+        color: TechColors.textSecondary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: fanRunning ? TechColors.statusNormal : TechColors.statusAlarm,
+          color: TechColors.textSecondary,
           width: 1,
         ),
       ),
@@ -384,17 +449,15 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            fanRunning ? Icons.check_circle : Icons.cancel,
+            Icons.cloud_off,
             size: 14,
-            color:
-                fanRunning ? TechColors.statusNormal : TechColors.statusAlarm,
+            color: TechColors.textSecondary,
           ),
           const SizedBox(width: 4),
           Text(
-            fanRunning ? '风机运行中' : '风机已停止',
+            '设备未接入',
             style: TextStyle(
-              color:
-                  fanRunning ? TechColors.statusNormal : TechColors.statusAlarm,
+              color: TechColors.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -431,23 +494,18 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
 
   /// 构建PM10浓度卡片
   Widget _buildPM10Card() {
-    final pm10 = _appState.pm10Value;
-    final threshold = _appState.pm10Threshold;
-    final isOverThreshold = pm10 > threshold;
-    final displayColor =
-        isOverThreshold ? TechColors.statusAlarm : TechColors.glowCyan;
-
+    // 除尘器未接入，显示"-"
     return InfoCard(
-      accentColor: displayColor,
+      accentColor: TechColors.textSecondary,
       items: [
         InfoCardItem(
           icon: Icons.air,
           label: 'PM10浓度',
-          value: pm10.toStringAsFixed(1),
+          value: '-',
           unit: 'mg/m³',
-          iconColor: displayColor,
-          valueColor: displayColor,
-          showWarning: isOverThreshold,
+          iconColor: TechColors.textSecondary,
+          valueColor: TechColors.textSecondary,
+          showWarning: false,
           layout: InfoCardLayout.vertical,
         ),
       ],
@@ -456,28 +514,26 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
 
   /// 构建风机功率卡片
   Widget _buildFanPowerCard() {
-    const power = 145.8;
-    const energy = 3245.6;
-
+    // 除尘器未接入，显示"-"
     return InfoCard(
-      accentColor: TechColors.glowOrange,
+      accentColor: TechColors.textSecondary,
       items: [
         InfoCardItem(
           icon: Icons.flash_on,
           label: '瞬时功率',
-          value: power.toStringAsFixed(1),
+          value: '-',
           unit: 'kW',
-          iconColor: TechColors.glowOrange,
-          valueColor: TechColors.glowOrange,
+          iconColor: TechColors.textSecondary,
+          valueColor: TechColors.textSecondary,
           layout: InfoCardLayout.horizontal,
         ),
         InfoCardItem(
           icon: Icons.electric_meter,
           label: '累计能耗',
-          value: energy.toStringAsFixed(1),
+          value: '-',
           unit: 'kWh',
-          iconColor: TechColors.glowBlue,
-          valueColor: TechColors.glowBlue,
+          iconColor: TechColors.textSecondary,
+          valueColor: TechColors.textSecondary,
           layout: InfoCardLayout.horizontal,
         ),
       ],
@@ -516,23 +572,18 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
 
   /// 构建温度卡片
   Widget _buildTemperatureCard() {
-    const temperature = 85.6;
-    const threshold = 80.0;
-    final isOverThreshold = temperature > threshold;
-    final displayColor =
-        isOverThreshold ? TechColors.statusAlarm : TechColors.glowOrange;
-
+    // 除尘器未接入，显示"-"
     return InfoCard(
-      accentColor: displayColor,
+      accentColor: TechColors.textSecondary,
       items: [
         InfoCardItem(
           icon: Icons.thermostat,
           label: '入口温度',
-          value: temperature.toStringAsFixed(1),
+          value: '-',
           unit: '℃',
-          iconColor: displayColor,
-          valueColor: displayColor,
-          showWarning: isOverThreshold,
+          iconColor: TechColors.textSecondary,
+          valueColor: TechColors.textSecondary,
+          showWarning: false,
           layout: InfoCardLayout.vertical,
         ),
       ],
@@ -808,7 +859,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           Positioned(
             right: 16,
             top: 16,
-            bottom: screenHeight * 0.27,
+            bottom: screenHeight * 0.28,
             width: rightPanelWidth,
             child: TechPanel(
               title: '除尘器',
@@ -859,7 +910,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           // 前置过滤器压差面板（位于除尘器和炉皮冷却水之间）
           Positioned(
             right: 16,
-            bottom: screenHeight * 0.17,
+            bottom: screenHeight * 0.17 + 2,
             width: rightPanelWidth,
             child: TechPanel(
               title: '前置过滤器压差',
@@ -960,14 +1011,18 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                       value: _realtimeData.cooling.furnaceCover.flowM3h
                           .toStringAsFixed(2),
                       unit: 'm³/h',
-                      iconColor: TechColors.glowOrange),
+                      iconColor: TechColors.glowOrange,
+                      threshold: 2.0,
+                      isAboveThreshold: false),
                   DataItem(
                       icon: Icons.opacity,
                       label: '冷却水水压',
                       value: _realtimeData.cooling.furnaceCover.pressureMPa
                           .toStringAsFixed(2),
                       unit: 'MPa',
-                      iconColor: TechColors.glowBlue),
+                      iconColor: TechColors.glowBlue,
+                      threshold: 0.15,
+                      isAboveThreshold: false),
                 ],
               ),
             ),

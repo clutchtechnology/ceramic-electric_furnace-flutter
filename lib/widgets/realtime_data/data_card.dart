@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../common/blinking_text.dart';
 
 /// 数据项模型
 class DataItem {
@@ -129,8 +130,10 @@ class DataCard extends StatelessWidget {
                 ),
               ),
             ),
-          Text(
-            item.value,
+          // 数值文本 - 报警时闪烁
+          BlinkingText(
+            text: item.value,
+            isBlinking: isAlarm,
             style: TextStyle(
               color: valueColor,
               fontSize: 22,
@@ -145,8 +148,10 @@ class DataCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          Text(
-            item.unit,
+          // 单位文本 - 报警时也闪烁
+          BlinkingText(
+            text: item.unit,
+            isBlinking: isAlarm,
             style: TextStyle(
               color: isAlarm ? TechColors.glowRed : TechColors.textSecondary,
               fontSize: 20,
