@@ -63,16 +63,19 @@ class ElectricityRealtimeData {
 class CoolingWaterData {
   final double flowM3h; // 流速 m³/h
   final double pressureMPa; // 水压 MPa
+  final double totalM3; // 累计用量 m³
 
   CoolingWaterData({
     required this.flowM3h,
     required this.pressureMPa,
+    required this.totalM3,
   });
 
   factory CoolingWaterData.fromJson(Map<String, dynamic> json) {
     return CoolingWaterData(
-      flowM3h: (json['flow_m3h'] ?? 0).toDouble(),
-      pressureMPa: (json['pressure_MPa'] ?? 0).toDouble(),
+      flowM3h: (json['flow_m3h'] ?? 0.0).toDouble(),
+      pressureMPa: (json['pressure_MPa'] ?? 0.0).toDouble(),
+      totalM3: (json['total_m3'] ?? 0.0).toDouble(),
     );
   }
 }
@@ -182,24 +185,24 @@ class RealtimeBatchData {
     return RealtimeBatchData(
       electrodes: [
         ElectrodeRealtimeData(
-            id: 1, name: '电极1', depthMm: 0, currentA: 0, voltageV: 0),
+            id: 1, name: '电极1', depthMm: 0.0, currentA: 0.0, voltageV: 0.0),
         ElectrodeRealtimeData(
-            id: 2, name: '电极2', depthMm: 0, currentA: 0, voltageV: 0),
+            id: 2, name: '电极2', depthMm: 0.0, currentA: 0.0, voltageV: 0.0),
         ElectrodeRealtimeData(
-            id: 3, name: '电极3', depthMm: 0, currentA: 0, voltageV: 0),
+            id: 3, name: '电极3', depthMm: 0.0, currentA: 0.0, voltageV: 0.0),
       ],
       electricity: ElectricityRealtimeData(
-        powerKW: 0,
-        energyKWh: 0,
-        currentsA: [0, 0, 0],
+        powerKW: 0.0,
+        energyKWh: 0.0,
+        currentsA: [0.0, 0.0, 0.0],
       ),
       cooling: CoolingRealtimeData(
-        furnaceShell: CoolingWaterData(flowM3h: 0, pressureMPa: 0),
-        furnaceCover: CoolingWaterData(flowM3h: 0, pressureMPa: 0),
-        filterPressureDiffMPa: 0,
+        furnaceShell: CoolingWaterData(flowM3h: 0.0, pressureMPa: 0.0, totalM3: 0.0),
+        furnaceCover: CoolingWaterData(flowM3h: 0.0, pressureMPa: 0.0, totalM3: 0.0),
+        filterPressureDiffMPa: 0.0,
       ),
       hopper:
-          HopperRealtimeData(weightKg: 0, feedingTotalKg: 0, success: false),
+          HopperRealtimeData(weightKg: 0.0, feedingTotalKg: 0.0, success: false),
       batch: BatchInfo(isSmelting: false),
     );
   }

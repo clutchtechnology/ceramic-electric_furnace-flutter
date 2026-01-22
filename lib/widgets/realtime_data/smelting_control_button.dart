@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../common/tech_line_widgets.dart';
 
 /// 冶炼控制按钮组件
-class SmeltingControlButton extends StatelessWidget {
+class SmeltingControlButton extends StatefulWidget {
   final bool isSmelting;
   final String smeltingCode;
   final VoidCallback onStart;
@@ -21,6 +22,50 @@ class SmeltingControlButton extends StatelessWidget {
   });
 
   @override
+  State<SmeltingControlButton> createState() => _SmeltingControlButtonState();
+}
+
+class _SmeltingControlButtonState extends State<SmeltingControlButton> {
+  Timer? _longPressTimer;
+  double _pressProgress = 0.0;
+  bool _isLongPressing = false;
+
+  void _onStopPressStart() {
+    setState(() {
+      _isLongPressing = true;
+      _pressProgress = 0.0;
+    });
+
+    _longPressTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      setState(() {
+        _pressProgress += 50 / 3000; // 3秒 = 3000ms
+        if (_pressProgress >= 1.0) {
+          _pressProgress = 1.0;
+          _longPressTimer?.cancel();
+          _longPressTimer = null;
+          _isLongPressing = false;
+          widget.onStop();
+        }
+      });
+    });
+  }
+
+  void _onStopPressEnd() {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    setState(() {
+      _isLongPressing = false;
+      _pressProgress = 0.0;
+    });
+  }
+
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -28,13 +73,13 @@ class SmeltingControlButton extends StatelessWidget {
         color: TechColors.bgMedium.withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
+          color: widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
             color:
-                (isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
+                (widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
                     .withOpacity(0.2),
             blurRadius: 12,
             spreadRadius: 1,
@@ -48,19 +93,19 @@ class SmeltingControlButton extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color:
-                  (isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
+                  (widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
                       .withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isSmelting ? Icons.science : Icons.play_circle_filled,
+              widget.isSmelting ? Icons.science : Icons.play_circle_filled,
               color:
-                  isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
+                  widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
               size: 32,
             ),
           ),
           const SizedBox(width: 20),
-          if (isSmelting && smeltingCode.isNotEmpty) ...[
+          if (widget.isSmelting && widget.smeltingCode.isNotEmpty) ...[
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -75,7 +120,7 @@ class SmeltingControlButton extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '轮次编码：$smeltingCode',
+                  '轮次编码：${widget.smeltingCode}',
                   style: TextStyle(
                     color: TechColors.textSecondary,
                     fontSize: 15,
@@ -88,10 +133,12 @@ class SmeltingControlButton extends StatelessWidget {
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
-                onTap: onStop,
+                onTapDown: (_) => _onStopPressStart(),
+                onTapUp: (_) => _onStopPressEnd(),
+                onTapCancel: _onStopPressEnd,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  width: 150,
+                  height: 48,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -108,21 +155,44 @@ class SmeltingControlButton extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Stack(
                     children: [
-                      Icon(
-                        Icons.stop_circle,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        '停止冶炼',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      // 进度条背景
+                      if (_isLongPressing)
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: _pressProgress,
+                              backgroundColor: Colors.transparent,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // 按钮内容
+                      Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.stop_circle,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _isLongPressing
+                                  ? '长按停止 ${(3 - _pressProgress * 3).toStringAsFixed(1)}s'
+                                  : '停止冶炼',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -136,9 +206,9 @@ class SmeltingControlButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  isSystemReady ? '系统就绪' : '系统未就绪',
+                  widget.isSystemReady ? '系统就绪' : '系统未就绪',
                   style: TextStyle(
-                    color: isSystemReady
+                    color: widget.isSystemReady
                         ? TechColors.statusNormal
                         : TechColors.statusWarning,
                     fontSize: 18,
@@ -147,7 +217,7 @@ class SmeltingControlButton extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isSystemReady ? '等待开始冶炼...' : '等待后端连接...',
+                  widget.isSystemReady ? '等待开始冶炼...' : '等待后端连接...',
                   style: TextStyle(
                     color: TechColors.textSecondary,
                     fontSize: 14,
@@ -157,30 +227,30 @@ class SmeltingControlButton extends StatelessWidget {
             ),
             const SizedBox(width: 24),
             MouseRegion(
-              cursor: isSystemReady
+              cursor: widget.isSystemReady
                   ? SystemMouseCursors.click
                   : SystemMouseCursors.forbidden,
               child: GestureDetector(
-                onTap: isSystemReady ? onStart : null,
+                onTap: widget.isSystemReady ? widget.onStart : null,
                 child: Opacity(
-                  opacity: isSystemReady ? 1.0 : 0.5,
+                  opacity: widget.isSystemReady ? 1.0 : 0.5,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 14),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          isSystemReady
+                          widget.isSystemReady
                               ? TechColors.statusNormal
                               : TechColors.statusOffline,
-                          (isSystemReady
+                          (widget.isSystemReady
                                   ? TechColors.statusNormal
                                   : TechColors.statusOffline)
                               .withOpacity(0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: isSystemReady
+                      boxShadow: widget.isSystemReady
                           ? [
                               BoxShadow(
                                 color: TechColors.statusNormal.withOpacity(0.3),

@@ -21,6 +21,9 @@ class AppState extends ChangeNotifier {
   // 系统就绪状态 (后端+PLC都正常)
   bool isSystemReady = false;
 
+  // 炉号配置
+  String furnaceNumber = '3'; // 3号炉
+
   List<ValveState> valves = [
     ValveState(
         id: '1', name: '1号', status: ValveStatus.open, openingDegree: 75),
@@ -109,6 +112,7 @@ class AppState extends ChangeNotifier {
       // 加载数据大屏状态
       fanRunning = _prefs.getBool('fanRunning') ?? true;
       vibrationFault = _prefs.getBool('vibrationFault') ?? true;
+      furnaceNumber = _prefs.getString('furnaceNumber') ?? '3';
 
       final valvesJson = _prefs.getString('valves');
       if (valvesJson != null) {

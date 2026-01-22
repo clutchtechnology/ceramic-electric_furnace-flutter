@@ -439,11 +439,6 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 2列3行布局，每个区域高度计算
-    // 减去总padding和间距
-    // 3 rows = 3 * height + 2 * spacing(8)
-    // height = (total - 16) / 3
-    // 使用 Column + Expanded 构建行
     return Container(
       color: TechColors.bgDeep,
       padding: const EdgeInsets.all(8),
@@ -452,247 +447,248 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
           // 页面控制栏
           _buildControlBar(),
           const SizedBox(height: 8),
-          // Row 1
-          Expanded(
-            child: Row(
-              children: [
-                // 1. 料仓重量/投料重量
-                Expanded(
-                  child: TechPanel(
-                    title: '料仓',
-                    accentColor: TechColors.glowOrange,
-                    height: double.infinity,
-                    headerActions: [
-                      if (!_isHistoryMode)
+          // 历史轮次查询模式：1列3行布局
+          if (_isHistoryMode) ...[
+            // 1. 料仓重量
+            Expanded(
+              child: TechPanel(
+                title: '料仓重量',
+                accentColor: TechColors.glowOrange,
+                height: double.infinity,
+                headerActions: [
+                  _buildExportButton('料仓重量', _generateMockData('料仓重量'),
+                      accentColor: TechColors.glowOrange),
+                ],
+                child: TechBarChart(
+                  batchData: _generateBatchMockData('料仓重量'),
+                  accentColor: TechColors.glowOrange,
+                  yAxisLabel: 'kg',
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // 2. 炉皮冷却水用量
+            Expanded(
+              child: TechPanel(
+                title: '炉皮冷却水用量',
+                accentColor: TechColors.glowBlue,
+                height: double.infinity,
+                headerActions: [
+                  _buildExportButton('炉皮冷却水用量', _generateMockData('冷却水用量'),
+                      accentColor: TechColors.glowBlue),
+                ],
+                child: TechBarChart(
+                  batchData: _generateBatchMockData('冷却水用量'),
+                  accentColor: TechColors.glowBlue,
+                  yAxisLabel: 'm³',
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // 3. 炉盖冷却水用量
+            Expanded(
+              child: TechPanel(
+                title: '炉盖冷却水用量',
+                accentColor: TechColors.glowCyan,
+                height: double.infinity,
+                headerActions: [
+                  _buildExportButton('炉盖冷却水用量', _generateMockData('冷却水用量'),
+                      accentColor: TechColors.glowCyan),
+                ],
+                child: TechBarChart(
+                  batchData: _generateBatchMockData('冷却水用量'),
+                  accentColor: TechColors.glowCyan,
+                  yAxisLabel: 'm³',
+                ),
+              ),
+            ),
+          ]
+          // 非历史模式：2列3行布局
+          else ...[
+            // Row 1
+            Expanded(
+              child: Row(
+                children: [
+                  // 1. 料仓重量/投料重量
+                  Expanded(
+                    child: TechPanel(
+                      title: '料仓',
+                      accentColor: TechColors.glowOrange,
+                      height: double.infinity,
+                      headerActions: [
                         _buildDropdown(_weightOptions, _weightSelect,
                             (v) => setState(() => _weightSelect = v!),
                             accentColor: TechColors.glowOrange),
-                      if (!_isHistoryMode) const SizedBox(width: 8),
-                      _buildExportButton('料仓', _generateMockData(_weightSelect),
-                          accentColor: TechColors.glowOrange),
-                    ],
-                    child: _isHistoryMode
-                        ? TechBarChart(
-                            batchData: _generateBatchMockData(_weightSelect),
-                            accentColor: TechColors.glowOrange,
-                            yAxisLabel: _weightSelect.contains('重量') ? 'kg' : '',
-                          )
-                        : TechLineChart(
-                            data: _generateMockData(_weightSelect),
-                            accentColor: TechColors.glowOrange,
-                            yAxisLabel: _weightSelect.contains('重量') ? 'kg' : '',
-                          ),
+                        const SizedBox(width: 8),
+                        _buildExportButton('料仓', _generateMockData(_weightSelect),
+                            accentColor: TechColors.glowOrange),
+                      ],
+                      child: TechLineChart(
+                        data: _generateMockData(_weightSelect),
+                        accentColor: TechColors.glowOrange,
+                        yAxisLabel: _weightSelect.contains('重量') ? 'kg' : '',
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // 2. 炉皮冷却水
-                Expanded(
-                  child: TechPanel(
-                    title: '炉皮冷却水',
-                    accentColor: TechColors.glowBlue,
-                    height: double.infinity,
-                    headerActions: [
-                      if (!_isHistoryMode)
+                  const SizedBox(width: 8),
+                  // 2. 炉皮冷却水
+                  Expanded(
+                    child: TechPanel(
+                      title: '炉皮冷却水',
+                      accentColor: TechColors.glowBlue,
+                      height: double.infinity,
+                      headerActions: [
                         _buildDropdown(_filterOptions, _filterSelect,
                             (v) => setState(() => _filterSelect = v!),
                             accentColor: TechColors.glowBlue),
-                      if (!_isHistoryMode) const SizedBox(width: 8),
-                      _buildExportButton(
-                          '炉皮冷却水', _generateMockData(_filterSelect),
-                          accentColor: TechColors.glowBlue),
-                    ],
-                    child: _isHistoryMode
-                        ? TechBarChart(
-                            batchData: _generateBatchMockData(_filterSelect),
-                            accentColor: TechColors.glowBlue,
-                            yAxisLabel: _filterSelect.contains('压')
-                                ? (_filterSelect.contains('差') ? 'Pa' : 'MPa')
-                                : (_filterSelect.contains('用量') ? 'm³' : 'm³/h'),
-                          )
-                        : TechLineChart(
-                            data: _generateMockData(_filterSelect),
-                            accentColor: TechColors.glowBlue,
-                            yAxisLabel: _filterSelect.contains('压')
-                                ? (_filterSelect.contains('差') ? 'Pa' : 'MPa')
-                                : (_filterSelect.contains('用量') ? 'm³' : 'm³/h'),
-                          ),
+                        const SizedBox(width: 8),
+                        _buildExportButton(
+                            '炉皮冷却水', _generateMockData(_filterSelect),
+                            accentColor: TechColors.glowBlue),
+                      ],
+                      child: TechLineChart(
+                        data: _generateMockData(_filterSelect),
+                        accentColor: TechColors.glowBlue,
+                        yAxisLabel: _filterSelect.contains('压')
+                            ? (_filterSelect.contains('差') ? 'Pa' : 'MPa')
+                            : (_filterSelect.contains('用量') ? 'm³' : 'm³/h'),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // Row 2
-          Expanded(
-            child: Row(
-              children: [
-                // 3. 电炉电流 (多选)
-                Expanded(
-                  child: TechPanel(
-                    title: '电炉电流',
-                    accentColor: TechColors.glowCyan,
-                    height: double.infinity,
-                    headerActions: [
-                      _buildMultiSelectDropdown(
-                          _currentOptions, _currentSelects, (item) {
-                        setState(() {
-                          if (_currentSelects.contains(item)) {
-                            if (_currentSelects.length > 1)
-                              _currentSelects.remove(item);
-                          } else {
-                            if (_currentSelects.length < 3)
-                              _currentSelects.add(item);
-                          }
-                        });
-                      }, accentColor: TechColors.glowCyan),
-                      const SizedBox(width: 8),
-                      _buildExportButton(
-                          '电炉电流',
-                          _generateMockData(_currentSelects.isNotEmpty
-                              ? _currentSelects.first
-                              : '电极1电流'),
-                          accentColor: TechColors.glowCyan),
-                    ],
-                    child: _isHistoryMode && _currentSelects.length >= 2
-                        ? TechGroupedBarChart(
-                            groupedData: _generateGroupedMockData(),
-                            colors: const [
-                              TechColors.glowCyan,
-                              TechColors.glowGreen,
-                              TechColors.glowOrange
-                            ],
-                            accentColor: TechColors.glowCyan,
-                            yAxisLabel: '电流 (A)',
-                          )
-                        : _isHistoryMode && _currentSelects.length == 1
-                            ? TechBarChart(
-                                batchData: _generateBatchMockData(_currentSelects.first),
-                                accentColor: TechColors.glowCyan,
-                                yAxisLabel: '电流 (A)',
-                              )
-                            : TechLineChart(
-                                data: [], // Ignored when datas is provided
-                                datas: _currentSelects
-                                    .map((type) => _generateMockData(type))
-                                    .toList(),
-                                colors: const [
-                                  TechColors.glowCyan,
-                                  TechColors.glowGreen,
-                                  TechColors.glowOrange
-                                ],
-                                accentColor: TechColors.glowCyan,
-                                yAxisLabel: '电流 (A)',
-                                showGrid: true,
-                              ),
+            const SizedBox(height: 8),
+            // Row 2
+            Expanded(
+              child: Row(
+                children: [
+                  // 3. 电炉电流 (多选)
+                  Expanded(
+                    child: TechPanel(
+                      title: '电炉电流',
+                      accentColor: TechColors.glowCyan,
+                      height: double.infinity,
+                      headerActions: [
+                        _buildMultiSelectDropdown(
+                            _currentOptions, _currentSelects, (item) {
+                          setState(() {
+                            if (_currentSelects.contains(item)) {
+                              if (_currentSelects.length > 1)
+                                _currentSelects.remove(item);
+                            } else {
+                              if (_currentSelects.length < 3)
+                                _currentSelects.add(item);
+                            }
+                          });
+                        }, accentColor: TechColors.glowCyan),
+                        const SizedBox(width: 8),
+                        _buildExportButton(
+                            '电炉电流',
+                            _generateMockData(_currentSelects.isNotEmpty
+                                ? _currentSelects.first
+                                : '电极1电流'),
+                            accentColor: TechColors.glowCyan),
+                      ],
+                      child: TechLineChart(
+                        data: [], // Ignored when datas is provided
+                        datas: _currentSelects
+                            .map((type) => _generateMockData(type))
+                            .toList(),
+                        colors: const [
+                          TechColors.glowCyan,
+                          TechColors.glowGreen,
+                          TechColors.glowOrange
+                        ],
+                        accentColor: TechColors.glowCyan,
+                        yAxisLabel: '电流 (A)',
+                        showGrid: true,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // 4. 电炉能耗/功率
-                Expanded(
-                  child: TechPanel(
-                    title: '电炉功率能耗',
-                    accentColor: TechColors.glowGreen,
-                    height: double.infinity,
-                    headerActions: [
-                      if (!_isHistoryMode)
+                  const SizedBox(width: 8),
+                  // 4. 电炉能耗/功率
+                  Expanded(
+                    child: TechPanel(
+                      title: '电炉功率能耗',
+                      accentColor: TechColors.glowGreen,
+                      height: double.infinity,
+                      headerActions: [
                         _buildDropdown(_powerOptions, _powerSelect,
                             (v) => setState(() => _powerSelect = v!),
                             accentColor: TechColors.glowGreen),
-                      if (!_isHistoryMode) const SizedBox(width: 8),
-                      _buildExportButton(
-                          '电炉功率能耗', _generateMockData(_powerSelect),
-                          accentColor: TechColors.glowGreen),
-                    ],
-                    child: _isHistoryMode
-                        ? TechBarChart(
-                            batchData: _generateBatchMockData(_powerSelect),
-                            accentColor: TechColors.glowGreen,
-                            yAxisLabel: _powerSelect == '能耗' ? 'kWh' : 'kW',
-                          )
-                        : TechLineChart(
-                            data: _generateMockData(_powerSelect),
-                            accentColor: TechColors.glowGreen,
-                            yAxisLabel: _powerSelect == '能耗' ? 'kWh' : 'kW',
-                          ),
+                        const SizedBox(width: 8),
+                        _buildExportButton(
+                            '电炉功率能耗', _generateMockData(_powerSelect),
+                            accentColor: TechColors.glowGreen),
+                      ],
+                      child: TechLineChart(
+                        data: _generateMockData(_powerSelect),
+                        accentColor: TechColors.glowGreen,
+                        yAxisLabel: _powerSelect == '能耗' ? 'kWh' : 'kW',
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // Row 3
-          Expanded(
-            child: Row(
-              children: [
-                // 5. 除尘器 (四选一)
-                Expanded(
-                  child: TechPanel(
-                    title: '除尘器',
-                    accentColor: TechColors.glowBlue,
-                    height: double.infinity,
-                    headerActions: [
-                      if (!_isHistoryMode)
+            const SizedBox(height: 8),
+            // Row 3
+            Expanded(
+              child: Row(
+                children: [
+                  // 5. 除尘器 (四选一)
+                  Expanded(
+                    child: TechPanel(
+                      title: '除尘器',
+                      accentColor: TechColors.glowBlue,
+                      height: double.infinity,
+                      headerActions: [
                         _buildDropdown(_dustOptions, _dustSelect,
                             (v) => setState(() => _dustSelect = v!),
                             accentColor: TechColors.glowBlue),
-                      if (!_isHistoryMode) const SizedBox(width: 8),
-                      _buildExportButton('除尘器', _generateMockData(_dustSelect),
-                          accentColor: TechColors.glowBlue),
-                    ],
-                    child: _isHistoryMode
-                        ? TechBarChart(
-                            batchData: _generateBatchMockData(_dustSelect),
-                            accentColor: TechColors.glowBlue,
-                            yAxisLabel: _dustSelect.contains('温度')
-                                ? '℃'
-                                : (_dustSelect.contains('浓度') ? 'ug/m³' : ''),
-                          )
-                        : TechLineChart(
-                            data: _generateMockData(_dustSelect),
-                            accentColor: TechColors.glowBlue,
-                            yAxisLabel: _dustSelect.contains('温度')
-                                ? '℃'
-                                : (_dustSelect.contains('浓度') ? 'ug/m³' : ''),
-                          ),
+                        const SizedBox(width: 8),
+                        _buildExportButton('除尘器', _generateMockData(_dustSelect),
+                            accentColor: TechColors.glowBlue),
+                      ],
+                      child: TechLineChart(
+                        data: _generateMockData(_dustSelect),
+                        accentColor: TechColors.glowBlue,
+                        yAxisLabel: _dustSelect.contains('温度')
+                            ? '℃'
+                            : (_dustSelect.contains('浓度') ? 'ug/m³' : ''),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // 6. 炉盖冷却水
-                Expanded(
-                  child: TechPanel(
-                    title: '炉盖冷却水',
-                    accentColor: TechColors.glowOrange,
-                    height: double.infinity,
-                    headerActions: [
-                      if (!_isHistoryMode)
+                  const SizedBox(width: 8),
+                  // 6. 炉盖冷却水
+                  Expanded(
+                    child: TechPanel(
+                      title: '炉盖冷却水',
+                      accentColor: TechColors.glowOrange,
+                      height: double.infinity,
+                      headerActions: [
                         _buildDropdown(_lidCoolingOptions, _lidCoolingSelect,
                             (v) => setState(() => _lidCoolingSelect = v!),
                             accentColor: TechColors.glowOrange),
-                      if (!_isHistoryMode) const SizedBox(width: 8),
-                      _buildExportButton(
-                          '炉盖冷却水', _generateMockData(_lidCoolingSelect),
-                          accentColor: TechColors.glowOrange),
-                    ],
-                    child: _isHistoryMode
-                        ? TechBarChart(
-                            batchData: _generateBatchMockData(_lidCoolingSelect),
-                            accentColor: TechColors.glowOrange,
-                            yAxisLabel: _lidCoolingSelect.contains('压')
-                                ? 'MPa'
-                                : (_lidCoolingSelect.contains('用量') ? 'm³' : 'm³/h'),
-                          )
-                        : TechLineChart(
-                            data: _generateMockData(_lidCoolingSelect),
-                            accentColor: TechColors.glowOrange,
-                            yAxisLabel: _lidCoolingSelect.contains('压')
-                                ? 'MPa'
-                                : (_lidCoolingSelect.contains('用量') ? 'm³' : 'm³/h'),
-                          ),
+                        const SizedBox(width: 8),
+                        _buildExportButton(
+                            '炉盖冷却水', _generateMockData(_lidCoolingSelect),
+                            accentColor: TechColors.glowOrange),
+                      ],
+                      child: TechLineChart(
+                        data: _generateMockData(_lidCoolingSelect),
+                        accentColor: TechColors.glowOrange,
+                        yAxisLabel: _lidCoolingSelect.contains('压')
+                            ? 'MPa'
+                            : (_lidCoolingSelect.contains('用量') ? 'm³' : 'm³/h'),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

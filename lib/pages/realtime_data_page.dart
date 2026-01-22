@@ -64,11 +64,67 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     _appState = AppState.instance;
     _appState.addListener(_onStateChanged);
 
+    // [BACKEND_BYPASS_MODE] 初始化测试数据（带报警条件）
+    _initializeTestData();
+
     // 启动数据轮询
     _startPolling();
 
     // 立即获取一次数据
     _fetchRealtimeData();
+  }
+
+  /// [BACKEND_BYPASS_MODE] 初始化测试数据，用于触发报警
+  void _initializeTestData() {
+    _realtimeData = RealtimeBatchData(
+      electrodes: [
+        ElectrodeRealtimeData(
+          id: 1, 
+          name: '电极1', 
+          depthMm: 100.0,  // 低于150mm阈值，会报警
+          currentA: 2989.0, 
+          voltageV: 135.0
+        ),
+        ElectrodeRealtimeData(
+          id: 2, 
+          name: '电极2', 
+          depthMm: 1055.0, 
+          currentA: 2989.0, 
+          voltageV: 135.0
+        ),
+        ElectrodeRealtimeData(
+          id: 3, 
+          name: '电极3', 
+          depthMm: 1055.0, 
+          currentA: 2989.0, 
+          voltageV: 135.0
+        ),
+      ],
+      electricity: ElectricityRealtimeData(
+        powerKW: 1210.0,
+        energyKWh: 550.0,
+        currentsA: [2989.0, 2989.0, 2989.0],
+      ),
+      cooling: CoolingRealtimeData(
+        furnaceShell: CoolingWaterData(
+          flowM3h: 2.5, 
+          pressureMPa: 0.18, 
+          totalM3: 12.5
+        ),
+        furnaceCover: CoolingWaterData(
+          flowM3h: 2.3, 
+          pressureMPa: 0.16, 
+          totalM3: 11.2
+        ),
+        filterPressureDiffMPa: 0.05,
+      ),
+      hopper: HopperRealtimeData(
+        weightKg: 1500.0, 
+        feedingTotalKg: 3200.0, 
+        success: true
+      ),
+      batch: BatchInfo(isSmelting: false),
+    );
   }
 
   @override
@@ -130,6 +186,10 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
         debugPrint('[RealtimeDataPage] 实时数据刷新成功');
       } else {
         debugPrint('[RealtimeDataPage] 获取数据为空，保持原有数据');
+        // [BACKEND_BYPASS_MODE] 即使没有数据，也检查报警状态（使用现有数据）
+        if (mounted) {
+          _checkAlarmStatus();
+        }
       }
 
       // 2. 获取蝶阀最新状态并增量计算开合度
@@ -137,6 +197,10 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     } catch (e) {
       // 获取失败时不更新数据，保持原有状态
       debugPrint('[RealtimeDataPage] 获取实时数据失败，保持原有数据: $e');
+      // [BACKEND_BYPASS_MODE] 即使获取失败，也检查报警状态（使用现有数据）
+      if (mounted) {
+        _checkAlarmStatus();
+      }
     }
   }
 
@@ -357,14 +421,61 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
   }
 
   /// 开始冶炼
+  /// 
+  /// [BACKEND_BYPASS_MODE] 当前跳过后端调用，直接设置前端状态
+  /// 恢复后端调用：搜索 "BACKEND_BYPASS_MODE" 并取消注释后端代码，删除直接状态设置代码
   Future<void> _startSmelting() async {
-    // 生成默认批次号 (SM+日期+时间)
-    final now = DateTime.now();
-    final code =
-        'SM${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+    // 显示批次配置对话框
+    final batchConfig = await showDialog<BatchConfig>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BatchConfigDialog(
+        furnaceNumber: _appState.furnaceNumber,
+      ),
+    );
+
+    // 用户取消
+    if (batchConfig == null) return;
+
+    // 生成批次号: 炉号-年份月份-当月第XX炉 (例如: 1-202601-01)
+    final code = '${batchConfig.furnaceNumber}-${batchConfig.year}${batchConfig.month.toString().padLeft(2, '0')}-${batchConfig.batchNumber.toString().padLeft(2, '0')}';
 
     setState(() => isRefreshing = true); // 显示加载状态
 
+    // ============ [BACKEND_BYPASS_START] 跳过后端，直接设置状态 ============
+    try {
+      // 模拟短暂延迟
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      if (mounted) {
+        setState(() {
+          _appState.isSmelting = true;
+          _appState.smeltingCode = code;
+          isRefreshing = false;
+        });
+        _appState.notifyListeners();
+
+        _showOperationResult(
+          success: true,
+          message: '开始冶炼成功（前端模式）',
+        );
+
+        // 尝试立即刷新一次数据
+        Future.delayed(
+            const Duration(milliseconds: 1000), () => _fetchRealtimeData());
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isRefreshing = false);
+        _showOperationResult(
+          success: false,
+          message: '启动失败: $e',
+        );
+      }
+    }
+    // ============ [BACKEND_BYPASS_END] ============
+
+    /* ============ [BACKEND_ORIGINAL_START] 原后端调用代码（已注释） ============
     try {
       // 调用后端 API 启动轮询
       final response = await ControlApi.startPolling(code);
@@ -397,6 +508,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
         );
       }
     }
+    ============ [BACKEND_ORIGINAL_END] ============ */
   }
 
   /// 停止冶炼
@@ -768,7 +880,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                 smeltingCode: _appState.smeltingCode,
                 onStart: _startSmelting,
                 onStop: _stopSmelting,
-                isSystemReady: _appState.isSystemReady,
+                isSystemReady: true, // [BACKEND_BYPASS] 跳过后端检查，始终允许点击
               ),
             ),
           ),
@@ -791,7 +903,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                   // 电极1（左上）
                   Positioned(
                     top: furnaceWidth * 0.15,
-                    left: furnaceWidth / 2 - 180,
+                    left: furnaceWidth / 2 - 210,
                     child: _ElectrodeWidget(
                         label: '1#电极',
                         isSmelting: _appState.isSmelting,
@@ -807,7 +919,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                   // 电极2（右上）
                   Positioned(
                     top: furnaceWidth * 0.15,
-                    left: furnaceWidth / 2 + 60,
+                    left: furnaceWidth / 2 + 90,
                     child: _ElectrodeWidget(
                         label: '2#电极',
                         isSmelting: _appState.isSmelting,
@@ -859,7 +971,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           Positioned(
             right: 16,
             top: 16,
-            bottom: screenHeight * 0.28,
+            bottom: screenHeight * 0.33,
             width: rightPanelWidth,
             child: TechPanel(
               title: '除尘器',
@@ -910,7 +1022,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           // 前置过滤器压差面板（位于除尘器和炉皮冷却水之间）
           Positioned(
             right: 16,
-            bottom: screenHeight * 0.17 + 2,
+            bottom: screenHeight * 0.22,
             width: rightPanelWidth,
             child: TechPanel(
               title: '前置过滤器压差',
@@ -990,6 +1102,13 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                       iconColor: TechColors.glowBlue,
                       threshold: 0.15,
                       isAboveThreshold: false),
+                  DataItem(
+                      icon: Icons.water_drop,
+                      label: '冷却水用量',
+                      value: _realtimeData.cooling.furnaceShell.totalM3
+                          .toStringAsFixed(2),
+                      unit: 'm³',
+                      iconColor: TechColors.glowCyan),
                 ],
               ),
             ),
@@ -1023,6 +1142,13 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                       iconColor: TechColors.glowBlue,
                       threshold: 0.15,
                       isAboveThreshold: false),
+                  DataItem(
+                      icon: Icons.water_drop,
+                      label: '冷却水用量',
+                      value: _realtimeData.cooling.furnaceCover.totalM3
+                          .toStringAsFixed(2),
+                      unit: 'm³',
+                      iconColor: TechColors.glowCyan),
                 ],
               ),
             ),
@@ -1378,6 +1504,411 @@ class FeedingStatisticsDialog extends StatefulWidget {
   State<FeedingStatisticsDialog> createState() => _FeedingStatisticsDialogState();
 }
 
+/// 批次配置数据类
+class BatchConfig {
+  final String furnaceNumber; // 炉号
+  final int year; // 年份
+  final int month; // 月份
+  final int batchNumber; // 当月第XX炉
+
+  BatchConfig({
+    required this.furnaceNumber,
+    required this.year,
+    required this.month,
+    required this.batchNumber,
+  });
+}
+
+/// 批次配置对话框
+class BatchConfigDialog extends StatefulWidget {
+  final String furnaceNumber;
+
+  const BatchConfigDialog({
+    super.key,
+    required this.furnaceNumber,
+  });
+
+  @override
+  State<BatchConfigDialog> createState() => _BatchConfigDialogState();
+}
+
+class _BatchConfigDialogState extends State<BatchConfigDialog> {
+  late int _selectedYear;
+  late int _selectedMonth;
+  late int _selectedBatchNumber;
+  bool _isLoading = false;
+  late TextEditingController _batchNumberController;
+  String? _batchNumberError;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedYear = now.year;
+    _selectedMonth = now.month;
+    _selectedBatchNumber = 1; // 默认从1开始，后续可以从后端获取当月最大值+1
+    _batchNumberController = TextEditingController(text: '1');
+  }
+
+  @override
+  void dispose() {
+    _batchNumberController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 500,
+        decoration: BoxDecoration(
+          color: TechColors.bgDeep,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: TechColors.glowCyan.withOpacity(0.5),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: TechColors.glowCyan.withOpacity(0.3),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 标题栏
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: TechColors.bgDark.withOpacity(0.8),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: TechColors.glowCyan.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.edit_note,
+                    color: TechColors.glowCyan,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    '批次配置',
+                    style: TextStyle(
+                      color: TechColors.textPrimary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // 内容区域
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 炉号（只读）
+                  _buildReadOnlyField('炉号', '${widget.furnaceNumber}号炉'),
+                  const SizedBox(height: 20),
+                  // 年份选择
+                  _buildYearSelector(),
+                  const SizedBox(height: 20),
+                  // 月份选择
+                  _buildMonthSelector(),
+                  const SizedBox(height: 20),
+                  // 炉次选择
+                  _buildBatchNumberSelector(),
+                  const SizedBox(height: 32),
+                  // 按钮组
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        child: const Text(
+                          '取消',
+                          style: TextStyle(
+                            color: TechColors.textSecondary,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _onConfirm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: TechColors.glowCyan.withOpacity(0.2),
+                          foregroundColor: TechColors.glowCyan,
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                            side: BorderSide(color: TechColors.glowCyan),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: TechColors.glowCyan,
+                                ),
+                              )
+                            : const Text(
+                                '确认',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: TechColors.textSecondary,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: TechColors.bgDark.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: TechColors.borderDark),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: TechColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildYearSelector() {
+    final currentYear = DateTime.now().year;
+    final years = List.generate(5, (index) => currentYear - 2 + index); // 前2年到后2年
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '年份',
+          style: TextStyle(
+            color: TechColors.textSecondary,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: TechColors.bgMedium.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: TechColors.borderDark),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: _selectedYear,
+              dropdownColor: TechColors.bgDark,
+              style: const TextStyle(
+                color: TechColors.textPrimary,
+                fontSize: 20,
+              ),
+              icon: const Icon(Icons.arrow_drop_down, color: TechColors.glowCyan),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedYear = value);
+                }
+              },
+              items: years.map((year) {
+                return DropdownMenuItem<int>(
+                  value: year,
+                  child: Text('$year年'),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMonthSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '月份',
+          style: TextStyle(
+            color: TechColors.textSecondary,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: TechColors.bgMedium.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: TechColors.borderDark),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: _selectedMonth,
+              dropdownColor: TechColors.bgDark,
+              style: const TextStyle(
+                color: TechColors.textPrimary,
+                fontSize: 20,
+              ),
+              icon: const Icon(Icons.arrow_drop_down, color: TechColors.glowCyan),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedMonth = value);
+                }
+              },
+              items: List.generate(12, (index) {
+                final month = index + 1;
+                return DropdownMenuItem<int>(
+                  value: month,
+                  child: Text('${month.toString().padLeft(2, '0')}月'),
+                );
+              }),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBatchNumberSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '当月炉次',
+          style: TextStyle(
+            color: TechColors.textSecondary,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _batchNumberController,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(
+            color: TechColors.textPrimary,
+            fontSize: 20,
+          ),
+          decoration: InputDecoration(
+            hintText: '请输入炉次 (01-99)',
+            hintStyle: TextStyle(
+              color: TechColors.textSecondary.withOpacity(0.5),
+              fontSize: 16,
+            ),
+            errorText: _batchNumberError,
+            filled: true,
+            fillColor: TechColors.bgMedium.withOpacity(0.5),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: TechColors.borderDark),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: TechColors.borderDark),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: TechColors.glowCyan, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: TechColors.statusAlarm),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          onChanged: (value) {
+            setState(() {
+              _batchNumberError = _validateBatchNumber(value);
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  String? _validateBatchNumber(String value) {
+    if (value.isEmpty) {
+      return '请输入炉次';
+    }
+    final number = int.tryParse(value);
+    if (number == null) {
+      return '请输入有效数字';
+    }
+    if (number < 1 || number > 99) {
+      return '炉次范围为 1-99';
+    }
+    return null;
+  }
+
+  void _onConfirm() {
+    final batchNumberText = _batchNumberController.text.trim();
+    final error = _validateBatchNumber(batchNumberText);
+    
+    if (error != null) {
+      setState(() {
+        _batchNumberError = error;
+      });
+      return;
+    }
+
+    final batchNumber = int.parse(batchNumberText);
+    final config = BatchConfig(
+      furnaceNumber: widget.furnaceNumber,
+      year: _selectedYear,
+      month: _selectedMonth,
+      batchNumber: batchNumber,
+    );
+    Navigator.of(context).pop(config);
+  }
+}
+
 class _FeedingStatisticsDialogState extends State<FeedingStatisticsDialog> {
   bool _isLoading = true;
   List<ChartDataPoint> _feedingData = [];
@@ -1390,58 +1921,26 @@ class _FeedingStatisticsDialogState extends State<FeedingStatisticsDialog> {
   }
 
   Future<void> _loadFeedingData() async {
+    // [BACKEND_BYPASS_MODE] 跳过后端，直接显示模拟数据
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
-
-    try {
-      final apiClient = ApiClient();
-      // 调用料仓历史数据接口
-      final response = await apiClient.get(
-        Api.historyHopper,
-        params: {
-          'batch_code': widget.batchCode,
-        },
+    await Future.delayed(const Duration(milliseconds: 400));
+    // 构造模拟数据
+    final now = DateTime.now();
+    final List<ChartDataPoint> points = List.generate(12, (i) {
+      final time = now.subtract(Duration(minutes: (11 - i) * 5));
+      return ChartDataPoint(
+        label: "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}",
+        value: 1000 + i * 120 + (i % 3 == 0 ? 80 : 0),
       );
-
-      if (response['success'] == true && response['data'] != null) {
-        final List<dynamic> dataList = response['data'] as List<dynamic>;
-        
-        final List<ChartDataPoint> points = [];
-        for (var item in dataList) {
-          final timestamp = item['timestamp'] as String?;
-          final feedingTotal = (item['feeding_total_kg'] ?? 0).toDouble();
-          
-          if (timestamp != null && timestamp.isNotEmpty) {
-            // 提取时间部分 (HH:mm:ss)
-            final timeStr = timestamp.length >= 19 
-                ? timestamp.substring(11, 19) 
-                : timestamp;
-            
-            points.add(ChartDataPoint(
-              label: timeStr,
-              value: feedingTotal,
-            ));
-          }
-        }
-
-        if (mounted) {
-          setState(() {
-            _feedingData = points;
-            _isLoading = false;
-          });
-        }
-      } else {
-        throw Exception('数据格式错误');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = '加载数据失败: $e';
-        });
-      }
+    });
+    if (mounted) {
+      setState(() {
+        _feedingData = points;
+        _isLoading = false;
+      });
     }
   }
 
