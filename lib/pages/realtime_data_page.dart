@@ -7,6 +7,7 @@ import '../widgets/realtime_data/valve_status_indicator.dart';
 import '../widgets/realtime_data/electrode_current_chart.dart';
 import '../widgets/realtime_data/info_card.dart';
 import '../widgets/realtime_data/smelting_control_button.dart';
+import '../widgets/history_curve/tech_chart.dart';
 import '../models/app_state.dart';
 import '../models/realtime_data.dart';
 import '../models/valve_status.dart';
@@ -14,6 +15,7 @@ import '../api/index.dart';
 import '../api/valve_api.dart';
 import '../api/control_api.dart'; // 控制API
 import '../tools/valve_calculator.dart';
+import '../api/api.dart';
 
 /// 实时数据页面
 /// 用于显示智能生产线数字孪生系统的实时数据
@@ -274,6 +276,16 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
             width: 1,
           ),
         ),
+      ),
+    );
+  }
+
+  /// 显示投料统计对话框
+  Future<void> _showFeedingStatisticsDialog() async {
+    showDialog(
+      context: context,
+      builder: (context) => FeedingStatisticsDialog(
+        batchCode: _realtimeData.batch.batchCode ?? '当前批次',
       ),
     );
   }
@@ -730,7 +742,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                     top: furnaceWidth * 0.15,
                     left: furnaceWidth / 2 - 180,
                     child: _ElectrodeWidget(
-                        label: '电极1',
+                        label: '1#电极',
                         isSmelting: _appState.isSmelting,
                         depth: _realtimeData.electrodes[0].depthMm
                             .toStringAsFixed(0),
@@ -746,7 +758,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                     top: furnaceWidth * 0.15,
                     left: furnaceWidth / 2 + 60,
                     child: _ElectrodeWidget(
-                        label: '电极2',
+                        label: '2#电极',
                         isSmelting: _appState.isSmelting,
                         depth: _realtimeData.electrodes[1].depthMm
                             .toStringAsFixed(0),
@@ -763,7 +775,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                     left: furnaceWidth / 2 - 60,
                     child: _ElectrodeWidget(
                         isSmelting: _appState.isSmelting,
-                        label: '电极3',
+                        label: '3#电极',
                         depth: _realtimeData.electrodes[2].depthMm
                             .toStringAsFixed(0),
                         depthValue: _realtimeData.electrodes[2].depthMm,
@@ -844,6 +856,29 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
               ),
             ),
           ),
+          // 前置过滤器压差面板（位于除尘器和炉皮冷却水之间）
+          Positioned(
+            right: 16,
+            bottom: screenHeight * 0.17,
+            width: rightPanelWidth,
+            child: TechPanel(
+              title: '前置过滤器压差',
+              accentColor: TechColors.glowBlue,
+              padding: const EdgeInsets.all(8),
+              child: DataCard(
+                items: [
+                  DataItem(
+                      icon: Icons.compress,
+                      label: '进出口压差',
+                      value:
+                          (_realtimeData.cooling.filterPressureDiffMPa * 1000)
+                              .toStringAsFixed(1), // MPa -> kPa (更直观)
+                      unit: 'kPa',
+                      iconColor: TechColors.glowBlue),
+                ],
+              ),
+            ),
+          ),
           // 左侧中部：梯形图（电极电流图表）
           Positioned(
             left: 16,
@@ -886,15 +921,6 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
               padding: const EdgeInsets.all(8),
               child: DataCard(
                 items: [
-                  // 前置过滤器压差（从后端计算得到）
-                  DataItem(
-                      icon: Icons.compress,
-                      label: '前置过滤器进出口压差',
-                      value:
-                          (_realtimeData.cooling.filterPressureDiffMPa * 1000)
-                              .toStringAsFixed(1), // MPa -> kPa (更直观)
-                      unit: 'kPa',
-                      iconColor: TechColors.glowBlue),
                   DataItem(
                       icon: Icons.water,
                       label: '冷却水流速',
@@ -913,14 +939,6 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                       iconColor: TechColors.glowBlue,
                       threshold: 0.15,
                       isAboveThreshold: false),
-                  // 累计用水暂不显示（配置文件无此参数）
-                  const DataItem(
-                      icon: Icons.water_drop,
-                      label: '累计用水',
-                      value: '--',
-                      unit: 'm³',
-                      iconColor: TechColors.glowCyan,
-                      isMasked: true),
                 ],
               ),
             ),
@@ -950,14 +968,6 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                           .toStringAsFixed(2),
                       unit: 'MPa',
                       iconColor: TechColors.glowBlue),
-                  // 累计用水暂不显示
-                  const DataItem(
-                      icon: Icons.water_drop,
-                      label: '累计用水',
-                      value: '--',
-                      unit: 'm³',
-                      iconColor: TechColors.glowCyan,
-                      isMasked: true),
                 ],
               ),
             ),
@@ -967,27 +977,30 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
             left: 16,
             bottom: 16,
             width: valveWidth,
-            child: TechPanel(
-              title: '重量',
-              accentColor: TechColors.glowOrange,
-              padding: const EdgeInsets.all(8),
-              child: DataCard(
-                items: [
-                  DataItem(
-                      icon: Icons.scale,
-                      label: '料仓重量',
-                      value: _realtimeData.hopper.weightKg.toStringAsFixed(0),
-                      unit: 'kg',
-                      iconColor: TechColors.glowOrange),
-                  // 投料重量：显示当前批次的累计投料量
-                  DataItem(
-                      icon: Icons.arrow_downward,
-                      label: '投料重量',
-                      value: _realtimeData.hopper.feedingTotalKg
-                          .toStringAsFixed(0),
-                      unit: 'kg',
-                      iconColor: TechColors.glowGreen),
-                ],
+            child: GestureDetector(
+              onTap: _showFeedingStatisticsDialog,
+              child: TechPanel(
+                title: '重量',
+                accentColor: TechColors.glowOrange,
+                padding: const EdgeInsets.all(8),
+                child: DataCard(
+                  items: [
+                    DataItem(
+                        icon: Icons.scale,
+                        label: '料仓重量',
+                        value: _realtimeData.hopper.weightKg.toStringAsFixed(0),
+                        unit: 'kg',
+                        iconColor: TechColors.glowOrange),
+                    // 投料重量：显示当前批次的累计投料量
+                    DataItem(
+                        icon: Icons.arrow_downward,
+                        label: '投料重量',
+                        value: _realtimeData.hopper.feedingTotalKg
+                            .toStringAsFixed(0),
+                        unit: 'kg',
+                        iconColor: TechColors.glowGreen),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1189,14 +1202,14 @@ class _ElectrodeWidget extends StatelessWidget {
                 '深度 ',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: 18,
                 ),
               ),
               Text(
-                depth,
+                (depthValue / 1000).toStringAsFixed(3),
                 style: TextStyle(
                   color: depthColor,
-                  fontSize: 17,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Roboto Mono',
                   shadows: [
@@ -1209,31 +1222,31 @@ class _ElectrodeWidget extends StatelessWidget {
               ),
               const SizedBox(width: 2),
               const Text(
-                'mm',
+                'm',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: 18,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          // 第三行：电流数据
+          // 第三行：弧流数据
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                '电流 ',
+                '弧流 ',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: 18,
                 ),
               ),
               Text(
                 current,
                 style: TextStyle(
                   color: currentColor,
-                  fontSize: 17,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Roboto Mono',
                   shadows: [
@@ -1246,31 +1259,31 @@ class _ElectrodeWidget extends StatelessWidget {
               ),
               const SizedBox(width: 2),
               const Text(
-                'A', // 电流单位显示为 A，因为数据已经是计算好的安培值 (kA * 1000) 或直接 A
+                'A',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: 18,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          // 第四行：电压数据
+          // 第四行：弧压数据
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                '电压 ',
+                '弧压 ',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: 18,
                 ),
               ),
               Text(
                 voltage,
                 style: TextStyle(
                   color: TechColors.glowGreen,
-                  fontSize: 17,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Roboto Mono',
                   shadows: [
@@ -1286,13 +1299,308 @@ class _ElectrodeWidget extends StatelessWidget {
                 'V',
                 style: TextStyle(
                   color: TechColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: 18,
                 ),
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 投料统计对话框
+class FeedingStatisticsDialog extends StatefulWidget {
+  final String batchCode;
+
+  const FeedingStatisticsDialog({
+    super.key,
+    required this.batchCode,
+  });
+
+  @override
+  State<FeedingStatisticsDialog> createState() => _FeedingStatisticsDialogState();
+}
+
+class _FeedingStatisticsDialogState extends State<FeedingStatisticsDialog> {
+  bool _isLoading = true;
+  List<ChartDataPoint> _feedingData = [];
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeedingData();
+  }
+
+  Future<void> _loadFeedingData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final apiClient = ApiClient();
+      // 调用料仓历史数据接口
+      final response = await apiClient.get(
+        Api.historyHopper,
+        params: {
+          'batch_code': widget.batchCode,
+        },
+      );
+
+      if (response['success'] == true && response['data'] != null) {
+        final List<dynamic> dataList = response['data'] as List<dynamic>;
+        
+        final List<ChartDataPoint> points = [];
+        for (var item in dataList) {
+          final timestamp = item['timestamp'] as String?;
+          final feedingTotal = (item['feeding_total_kg'] ?? 0).toDouble();
+          
+          if (timestamp != null && timestamp.isNotEmpty) {
+            // 提取时间部分 (HH:mm:ss)
+            final timeStr = timestamp.length >= 19 
+                ? timestamp.substring(11, 19) 
+                : timestamp;
+            
+            points.add(ChartDataPoint(
+              label: timeStr,
+              value: feedingTotal,
+            ));
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _feedingData = points;
+            _isLoading = false;
+          });
+        }
+      } else {
+        throw Exception('数据格式错误');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = '加载数据失败: $e';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 900,
+        height: 600,
+        decoration: BoxDecoration(
+          color: TechColors.bgDeep,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: TechColors.glowOrange.withOpacity(0.5),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: TechColors.glowOrange.withOpacity(0.3),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // 标题栏
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: TechColors.bgDark.withOpacity(0.8),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: TechColors.glowOrange.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.assessment,
+                    color: TechColors.glowOrange,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '投料统计',
+                        style: TextStyle(
+                          color: TechColors.textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '批次: ${widget.batchCode}',
+                        style: const TextStyle(
+                          color: TechColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 28),
+                    color: TechColors.textSecondary,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            // 内容区域
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: _buildContent(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              color: TechColors.glowOrange,
+            ),
+            SizedBox(height: 16),
+            Text(
+              '正在加载数据...',
+              style: TextStyle(
+                color: TechColors.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: TechColors.statusAlarm,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage,
+              style: const TextStyle(
+                color: TechColors.statusAlarm,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadFeedingData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('重试'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: TechColors.glowOrange.withOpacity(0.2),
+                foregroundColor: TechColors.glowOrange,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_feedingData.isEmpty) {
+      return const Center(
+        child: Text(
+          '暂无投料数据',
+          style: TextStyle(
+            color: TechColors.textSecondary,
+            fontSize: 18,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 图表标题
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 20,
+              decoration: BoxDecoration(
+                color: TechColors.glowOrange,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              '投料重量变化趋势',
+              style: TextStyle(
+                color: TechColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '数据点数: ${_feedingData.length}',
+              style: const TextStyle(
+                color: TechColors.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // 图表
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: TechColors.bgDark.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: TechColors.borderDark),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: TechLineChart(
+              data: _feedingData,
+              accentColor: TechColors.glowOrange,
+              yAxisLabel: 'kg',
+              showGrid: true,
+              showPoints: true,
+              minY: 0,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

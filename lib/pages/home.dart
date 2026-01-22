@@ -308,7 +308,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                     '3号电炉系统',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 20,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 2,
                     ),

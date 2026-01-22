@@ -37,7 +37,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       '电流 (A)',
                       style: TextStyle(
                         color: TechColors.textSecondary,
-                        fontSize: 14,
+                        fontSize: 18,
                       ),
                     ),
                   ),
@@ -113,7 +113,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
       label,
       style: const TextStyle(
         color: TechColors.textSecondary,
-        fontSize: 12,
+        fontSize: 16,
       ),
     );
   }
@@ -162,7 +162,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
               electrode.name,
               style: const TextStyle(
                 color: TechColors.textPrimary,
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -197,7 +197,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                   softWrap: false,
                   style: TextStyle(
                     color: color,
-                    fontSize: 12,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -276,7 +276,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
           label,
           style: TextStyle(
             color: color,
-            fontSize: 14,
+            fontSize: 17,
           ),
         ),
       ],

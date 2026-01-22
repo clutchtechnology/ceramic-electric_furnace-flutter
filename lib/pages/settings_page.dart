@@ -55,10 +55,14 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _distance1Expanded = false;
   bool _distance2Expanded = false;
   bool _distance3Expanded = false;
-  bool _pressureExpanded = false;
-  bool _flowExpanded = false;
-  bool _waterPressureExpanded = false;
   bool _filterPressureDiffExpanded = false;
+  bool _furnaceCoverFlowExpanded = false;
+  bool _furnaceCoverPressureExpanded = false;
+  bool _furnaceShellFlowExpanded = false;
+  bool _furnaceShellPressureExpanded = false;
+  bool _arcVoltage1Expanded = false;
+  bool _arcVoltage2Expanded = false;
+  bool _arcVoltage3Expanded = false;
 
   // 电弧1 电流阈值 (设定值: 5978 A, 低位: 5978*0.85=5081.3, 高位: 5978*1.15=6874.7)
   final TextEditingController _arc1CurrentMinController =
@@ -92,33 +96,49 @@ class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _distance3MaxController =
       TextEditingController(text: '1960');
 
-  // 压力阈值
-  final TextEditingController _pressureMinController =
-      TextEditingController(text: '0');
-  final TextEditingController _pressureMaxController =
-      TextEditingController(text: '10');
-
-  // 流量阈值
-  final TextEditingController _flowMinController =
-      TextEditingController(text: '0');
-  final TextEditingController _flowMaxController =
-      TextEditingController(text: '100');
-
-  // 炉皮冷却水水压阈值
-  final TextEditingController _waterPressure1MinController =
-      TextEditingController(text: '0');
-  final TextEditingController _waterPressure1MaxController =
-      TextEditingController(text: '1.0');
-  final TextEditingController _waterPressure2MinController =
-      TextEditingController(text: '0');
-  final TextEditingController _waterPressure2MaxController =
-      TextEditingController(text: '1.0');
-
   // 前置过滤器压差阈值 (水压1 - 水压2)
   final TextEditingController _filterPressureDiffMinController =
       TextEditingController(text: '0');
   final TextEditingController _filterPressureDiffMaxController =
       TextEditingController(text: '0.5');
+
+  // 炉盖冷却水流速阈值 (m³/h)
+  final TextEditingController _furnaceCoverFlowMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _furnaceCoverFlowMaxController =
+      TextEditingController(text: '10');
+
+  // 炉盖冷却水水压阈值 (MPa)
+  final TextEditingController _furnaceCoverPressureMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _furnaceCoverPressureMaxController =
+      TextEditingController(text: '1.0');
+
+  // 炉皮冷却水流速阈值 (m³/h)
+  final TextEditingController _furnaceShellFlowMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _furnaceShellFlowMaxController =
+      TextEditingController(text: '10');
+
+  // 炉皮冷却水水压阈值 (MPa)
+  final TextEditingController _furnaceShellPressureMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _furnaceShellPressureMaxController =
+      TextEditingController(text: '1.0');
+
+  // 弧压阈值 (V)
+  final TextEditingController _arcVoltage1MinController =
+      TextEditingController(text: '0');
+  final TextEditingController _arcVoltage1MaxController =
+      TextEditingController(text: '500');
+  final TextEditingController _arcVoltage2MinController =
+      TextEditingController(text: '0');
+  final TextEditingController _arcVoltage2MaxController =
+      TextEditingController(text: '500');
+  final TextEditingController _arcVoltage3MinController =
+      TextEditingController(text: '0');
+  final TextEditingController _arcVoltage3MaxController =
+      TextEditingController(text: '500');
 
   @override
   void dispose() {
@@ -145,19 +165,26 @@ class _SettingsPageState extends State<SettingsPage> {
     _distance2MaxController.dispose();
     _distance3MinController.dispose();
     _distance3MaxController.dispose();
-    // 压力/流量阈值
-    _pressureMinController.dispose();
-    _pressureMaxController.dispose();
-    _flowMinController.dispose();
-    _flowMaxController.dispose();
-    // 冷却水水压阈值
-    _waterPressure1MinController.dispose();
-    _waterPressure1MaxController.dispose();
-    _waterPressure2MinController.dispose();
-    _waterPressure2MaxController.dispose();
     // 前置过滤器压差阈值
     _filterPressureDiffMinController.dispose();
     _filterPressureDiffMaxController.dispose();
+    // 炉盖冷却水阈值
+    _furnaceCoverFlowMinController.dispose();
+    _furnaceCoverFlowMaxController.dispose();
+    _furnaceCoverPressureMinController.dispose();
+    _furnaceCoverPressureMaxController.dispose();
+    // 炉皮冷却水阈值
+    _furnaceShellFlowMinController.dispose();
+    _furnaceShellFlowMaxController.dispose();
+    _furnaceShellPressureMinController.dispose();
+    _furnaceShellPressureMaxController.dispose();
+    // 弧压阈值
+    _arcVoltage1MinController.dispose();
+    _arcVoltage1MaxController.dispose();
+    _arcVoltage2MinController.dispose();
+    _arcVoltage2MaxController.dispose();
+    _arcVoltage3MinController.dispose();
+    _arcVoltage3MaxController.dispose();
     super.dispose();
   }
 
@@ -203,7 +230,7 @@ class _SettingsPageState extends State<SettingsPage> {
             '配置中心',
             style: TextStyle(
               color: TechColors.textPrimary,
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -238,7 +265,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       color: isSelected
                           ? TechColors.glowCyan
                           : TechColors.textSecondary,
-                      size: 22,
+                      size: 26,
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -247,7 +274,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         color: isSelected
                             ? TechColors.glowCyan
                             : TechColors.textSecondary,
-                        fontSize: 16,
+                        fontSize: 19,
                         fontWeight:
                             isSelected ? FontWeight.w500 : FontWeight.w400,
                       ),
@@ -283,15 +310,15 @@ class _SettingsPageState extends State<SettingsPage> {
               _appState.systemConfigTabIndex == 0 ? '系统配置' : '报警阈值',
               style: const TextStyle(
                 color: TechColors.textPrimary,
-                fontSize: 24,
+                fontSize: 28,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
             ElevatedButton.icon(
               onPressed: _saveSettings,
-              icon: const Icon(Icons.save, size: 22),
-              label: const Text('保存配置', style: TextStyle(fontSize: 16)),
+              icon: const Icon(Icons.save, size: 26),
+              label: const Text('保存配置', style: TextStyle(fontSize: 19)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: TechColors.glowCyan.withOpacity(0.2),
                 foregroundColor: TechColors.glowCyan,
@@ -539,89 +566,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         const SizedBox(height: 12),
 
-        // ============ 压力阈值 ============
-        _buildCollapsibleSection(
-          title: '压力阈值',
-          icon: Icons.speed,
-          accentColor: TechColors.glowGreen,
-          isExpanded: _pressureExpanded,
-          onToggle: () =>
-              setState(() => _pressureExpanded = !_pressureExpanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '压力低位告警 (MPa)', _pressureMinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '压力高位告警 (MPa)', _pressureMaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ============ 流量阈值 ============
-        _buildCollapsibleSection(
-          title: '流量阈值',
-          icon: Icons.water_drop,
-          accentColor: TechColors.glowBlue,
-          isExpanded: _flowExpanded,
-          onToggle: () => setState(() => _flowExpanded = !_flowExpanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child:
-                        _buildInputField('流量低位告警 (m³/h)', _flowMinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child:
-                        _buildInputField('流量高位告警 (m³/h)', _flowMaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ============ 炉皮冷却水水压阈值 ============
-        _buildCollapsibleSection(
-          title: '炉皮冷却水水压阈值',
-          icon: Icons.water,
-          accentColor: TechColors.glowBlue,
-          isExpanded: _waterPressureExpanded,
-          onToggle: () =>
-              setState(() => _waterPressureExpanded = !_waterPressureExpanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '水压1低位告警 (MPa)', _waterPressure1MinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '水压1高位告警 (MPa)', _waterPressure1MaxController)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '水压2低位告警 (MPa)', _waterPressure2MinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '水压2高位告警 (MPa)', _waterPressure2MaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
         // ============ 前置过滤器压差阈值 ============
         _buildCollapsibleSection(
           title: '前置过滤器压差阈值',
@@ -640,6 +584,163 @@ class _SettingsPageState extends State<SettingsPage> {
                 Expanded(
                     child: _buildInputField(
                         '压差高位告警 (MPa)', _filterPressureDiffMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 弧压阈值 ============
+        _buildCollapsibleSection(
+          title: '电弧1 弧压阈值',
+          icon: Icons.electrical_services,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _arcVoltage1Expanded,
+          onToggle: () => setState(() => _arcVoltage1Expanded = !_arcVoltage1Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '弧压低位告警 (V)', _arcVoltage1MinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '弧压高位告警 (V)', _arcVoltage1MaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildCollapsibleSection(
+          title: '电弧2 弧压阈值',
+          icon: Icons.electrical_services,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _arcVoltage2Expanded,
+          onToggle: () => setState(() => _arcVoltage2Expanded = !_arcVoltage2Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '弧压低位告警 (V)', _arcVoltage2MinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '弧压高位告警 (V)', _arcVoltage2MaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildCollapsibleSection(
+          title: '电弧3 弧压阈值',
+          icon: Icons.electrical_services,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _arcVoltage3Expanded,
+          onToggle: () => setState(() => _arcVoltage3Expanded = !_arcVoltage3Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '弧压低位告警 (V)', _arcVoltage3MinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '弧压高位告警 (V)', _arcVoltage3MaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 炉盖冷却水流速阈值 ============
+        _buildCollapsibleSection(
+          title: '炉盖冷却水流速阈值',
+          icon: Icons.water,
+          accentColor: TechColors.glowOrange,
+          isExpanded: _furnaceCoverFlowExpanded,
+          onToggle: () => setState(() => _furnaceCoverFlowExpanded = !_furnaceCoverFlowExpanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '流速低位告警 (m³/h)', _furnaceCoverFlowMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '流速高位告警 (m³/h)', _furnaceCoverFlowMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 炉盖冷却水水压阈值 ============
+        _buildCollapsibleSection(
+          title: '炉盖冷却水水压阈值',
+          icon: Icons.opacity,
+          accentColor: TechColors.glowBlue,
+          isExpanded: _furnaceCoverPressureExpanded,
+          onToggle: () => setState(() => _furnaceCoverPressureExpanded = !_furnaceCoverPressureExpanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '水压低位告警 (MPa)', _furnaceCoverPressureMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '水压高位告警 (MPa)', _furnaceCoverPressureMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 炉皮冷却水流速阈值 ============
+        _buildCollapsibleSection(
+          title: '炉皮冷却水流速阈值',
+          icon: Icons.water,
+          accentColor: TechColors.glowOrange,
+          isExpanded: _furnaceShellFlowExpanded,
+          onToggle: () => setState(() => _furnaceShellFlowExpanded = !_furnaceShellFlowExpanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '流速低位告警 (m³/h)', _furnaceShellFlowMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '流速高位告警 (m³/h)', _furnaceShellFlowMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 炉皮冷却水水压阈值 ============
+        _buildCollapsibleSection(
+          title: '炉皮冷却水水压阈值',
+          icon: Icons.opacity,
+          accentColor: TechColors.glowBlue,
+          isExpanded: _furnaceShellPressureExpanded,
+          onToggle: () => setState(() => _furnaceShellPressureExpanded = !_furnaceShellPressureExpanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '水压低位告警 (MPa)', _furnaceShellPressureMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '水压高位告警 (MPa)', _furnaceShellPressureMaxController)),
               ],
             ),
           ],
@@ -673,14 +774,14 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Icon(icon, color: accentColor, size: 18),
+                  Icon(icon, color: accentColor, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       title,
                       style: TextStyle(
                         color: accentColor,
-                        fontSize: 14,
+                        fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -688,7 +789,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: TechColors.textSecondary,
-                    size: 20,
+                    size: 24,
                   ),
                 ],
               ),
@@ -726,13 +827,13 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           Row(
             children: [
-              Icon(icon, color: accentColor, size: 24),
+              Icon(icon, color: accentColor, size: 28),
               const SizedBox(width: 10),
               Text(
                 title,
                 style: TextStyle(
                   color: accentColor,
-                  fontSize: 18,
+                  fontSize: 22,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -754,7 +855,7 @@ class _SettingsPageState extends State<SettingsPage> {
           label,
           style: const TextStyle(
             color: TechColors.textSecondary,
-            fontSize: 15,
+            fontSize: 18,
           ),
         ),
         const SizedBox(height: 6),
@@ -763,7 +864,7 @@ class _SettingsPageState extends State<SettingsPage> {
           readOnly: true, // 系统配置改为只读
           style: const TextStyle(
             color: TechColors.textPrimary,
-            fontSize: 16,
+            fontSize: 19,
           ),
           decoration: InputDecoration(
             filled: true,
@@ -798,7 +899,7 @@ class _SettingsPageState extends State<SettingsPage> {
           '密码',
           style: TextStyle(
             color: TechColors.textSecondary,
-            fontSize: 15,
+            fontSize: 18,
           ),
         ),
         const SizedBox(height: 6),
@@ -808,7 +909,7 @@ class _SettingsPageState extends State<SettingsPage> {
           obscureText: !_showPassword,
           style: const TextStyle(
             color: TechColors.textPrimary,
-            fontSize: 16,
+            fontSize: 19,
           ),
           decoration: InputDecoration(
             filled: true,
@@ -832,7 +933,7 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icon(
                 _showPassword ? Icons.visibility : Icons.visibility_off,
                 color: TechColors.textSecondary,
-                size: 22,
+                size: 26,
               ),
               onPressed: () => setState(() => _showPassword = !_showPassword),
             ),
@@ -856,7 +957,7 @@ class _SettingsPageState extends State<SettingsPage> {
           label,
           style: const TextStyle(
             color: TechColors.textSecondary,
-            fontSize: 15,
+            fontSize: 18,
           ),
         ),
         const SizedBox(height: 6),
@@ -878,7 +979,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           item,
                           style: const TextStyle(
                             color: TechColors.textPrimary,
-                            fontSize: 16,
+                            fontSize: 19,
                           ),
                         ),
                       ))
@@ -902,9 +1003,9 @@ class _SettingsPageState extends State<SettingsPage> {
       SnackBar(
         content: const Row(
           children: [
-            Icon(Icons.check_circle, color: TechColors.glowGreen, size: 22),
+            Icon(Icons.check_circle, color: TechColors.glowGreen, size: 26),
             SizedBox(width: 8),
-            Text('配置保存成功', style: TextStyle(fontSize: 16)),
+            Text('配置保存成功', style: TextStyle(fontSize: 19)),
           ],
         ),
         backgroundColor: TechColors.bgDark,
