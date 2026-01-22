@@ -8,12 +8,16 @@ class SmeltingControlButton extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onStop;
 
+  /// 系统是否就绪 (后端+PLC都正常)
+  final bool isSystemReady;
+
   const SmeltingControlButton({
     super.key,
     required this.isSmelting,
     required this.smeltingCode,
     required this.onStart,
     required this.onStop,
+    this.isSystemReady = false,
   });
 
   @override
@@ -29,7 +33,9 @@ class SmeltingControlButton extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: (isSmelting ? TechColors.statusNormal : TechColors.glowOrange).withOpacity(0.2),
+            color:
+                (isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
+                    .withOpacity(0.2),
             blurRadius: 12,
             spreadRadius: 1,
           ),
@@ -41,12 +47,15 @@ class SmeltingControlButton extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (isSmelting ? TechColors.statusNormal : TechColors.glowOrange).withOpacity(0.2),
+              color:
+                  (isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
+                      .withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isSmelting ? Icons.science : Icons.play_circle_filled,
-              color: isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
+              color:
+                  isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
               size: 32,
             ),
           ),
@@ -81,7 +90,8 @@ class SmeltingControlButton extends StatelessWidget {
               child: GestureDetector(
                 onTap: onStop,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -125,17 +135,19 @@ class SmeltingControlButton extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  '系统就绪',
+                Text(
+                  isSystemReady ? '系统就绪' : '系统未就绪',
                   style: TextStyle(
-                    color: TechColors.textPrimary,
+                    color: isSystemReady
+                        ? TechColors.statusNormal
+                        : TechColors.statusWarning,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '等待开始冶炼...',
+                  isSystemReady ? '等待开始冶炼...' : '等待后端连接...',
                   style: TextStyle(
                     color: TechColors.textSecondary,
                     fontSize: 14,
@@ -145,45 +157,58 @@ class SmeltingControlButton extends StatelessWidget {
             ),
             const SizedBox(width: 24),
             MouseRegion(
-              cursor: SystemMouseCursors.click,
+              cursor: isSystemReady
+                  ? SystemMouseCursors.click
+                  : SystemMouseCursors.forbidden,
               child: GestureDetector(
-                onTap: onStart,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        TechColors.statusNormal,
-                        TechColors.statusNormal.withOpacity(0.8),
+                onTap: isSystemReady ? onStart : null,
+                child: Opacity(
+                  opacity: isSystemReady ? 1.0 : 0.5,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          isSystemReady
+                              ? TechColors.statusNormal
+                              : TechColors.statusOffline,
+                          (isSystemReady
+                                  ? TechColors.statusNormal
+                                  : TechColors.statusOffline)
+                              .withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: isSystemReady
+                          ? [
+                              BoxShadow(
+                                color: TechColors.statusNormal.withOpacity(0.3),
+                                blurRadius: 8,
+                                spreadRadius: 0,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '开始冶炼',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: TechColors.statusNormal.withOpacity(0.3),
-                        blurRadius: 8,
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        '开始冶炼',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),

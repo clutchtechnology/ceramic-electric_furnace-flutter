@@ -34,6 +34,39 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
   final List<String> _dustOptions = ['除尘器温度', '除尘器PM10浓度', '瞬时功率', '能耗'];
   final List<String> _vibrationOptions = ['风机振动幅度', '频谱', '水泵振动幅度', '频谱'];
 
+  // ============================================================
+  // [FIX] 数据缓存 - 避免联动刷新问题
+  // 每个图表的数据单独缓存，只有该图表刷新时才重新生成
+  // ============================================================
+  Map<String, List<ChartDataPoint>> _dataCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化时为每个图表生成数据
+    _refreshChartData('weight', _weightSelect);
+    _refreshChartData('filter', _filterSelect);
+    for (var item in _currentSelects) {
+      _refreshChartData('current_$item', item);
+    }
+    _refreshChartData('power', _powerSelect);
+    _refreshChartData('dust', _dustSelect);
+    _refreshChartData('vibration', _vibrationSelect);
+  }
+
+  /// 刷新指定图表的数据
+  void _refreshChartData(String cacheKey, String type) {
+    _dataCache[cacheKey] = _generateMockData(type);
+  }
+
+  /// 获取缓存的图表数据
+  List<ChartDataPoint> _getCachedData(String cacheKey, String type) {
+    if (!_dataCache.containsKey(cacheKey)) {
+      _refreshChartData(cacheKey, type);
+    }
+    return _dataCache[cacheKey]!;
+  }
+
   // 辅助函数：生成模拟数据
   List<ChartDataPoint> _generateMockData(String type) {
     // 简单根据类型返回不同的模拟数据范围
@@ -293,9 +326,12 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                     accentColor: TechColors.glowOrange,
                     height: double.infinity,
                     headerActions: [
-                      _buildDropdown(_weightOptions, _weightSelect,
-                          (v) => setState(() => _weightSelect = v!),
-                          accentColor: TechColors.glowOrange),
+                      _buildDropdown(_weightOptions, _weightSelect, (v) {
+                        setState(() {
+                          _weightSelect = v!;
+                          _refreshChartData('weight', _weightSelect);
+                        });
+                      }, accentColor: TechColors.glowOrange),
                       const SizedBox(width: 12),
                       TimeRangeSelector(
                         accentColor: TechColors.glowOrange,
@@ -305,13 +341,13 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                       const SizedBox(width: 8),
                       RefreshButton(
                           accentColor: TechColors.glowOrange,
-                          onPressed: () => setState(() {})),
+                          onPressed: () => setState(() => _refreshChartData('weight', _weightSelect))),
                       const SizedBox(width: 8),
-                      _buildExportButton('料仓', _generateMockData(_weightSelect),
+                      _buildExportButton('料仓', _getCachedData('weight', _weightSelect),
                           accentColor: TechColors.glowOrange),
                     ],
                     child: TechLineChart(
-                      data: _generateMockData(_weightSelect),
+                      data: _getCachedData('weight', _weightSelect),
                       accentColor: TechColors.glowOrange,
                       yAxisLabel: _weightSelect.contains('重量') ? 'kg' : '',
                     ),
@@ -325,9 +361,12 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                     accentColor: TechColors.glowBlue,
                     height: double.infinity,
                     headerActions: [
-                      _buildDropdown(_filterOptions, _filterSelect,
-                          (v) => setState(() => _filterSelect = v!),
-                          accentColor: TechColors.glowBlue),
+                      _buildDropdown(_filterOptions, _filterSelect, (v) {
+                        setState(() {
+                          _filterSelect = v!;
+                          _refreshChartData('filter', _filterSelect);
+                        });
+                      }, accentColor: TechColors.glowBlue),
                       const SizedBox(width: 12),
                       TimeRangeSelector(
                         accentColor: TechColors.glowBlue,
@@ -337,14 +376,13 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                       const SizedBox(width: 8),
                       RefreshButton(
                           accentColor: TechColors.glowBlue,
-                          onPressed: () => setState(() {})),
+                          onPressed: () => setState(() => _refreshChartData('filter', _filterSelect))),
                       const SizedBox(width: 8),
-                      _buildExportButton(
-                          '冷却水', _generateMockData(_filterSelect),
+                      _buildExportButton('冷却水', _getCachedData('filter', _filterSelect),
                           accentColor: TechColors.glowBlue),
                     ],
                     child: TechLineChart(
-                      data: _generateMockData(_filterSelect),
+                      data: _getCachedData('filter', _filterSelect),
                       accentColor: TechColors.glowBlue,
                       yAxisLabel: _filterSelect.contains('压')
                           ? (_filterSelect.contains('差') ? 'Pa' : 'MPa')
@@ -371,11 +409,15 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                           _currentOptions, _currentSelects, (item) {
                         setState(() {
                           if (_currentSelects.contains(item)) {
-                            if (_currentSelects.length > 1)
+                            if (_currentSelects.length > 1) {
                               _currentSelects.remove(item);
+                              _dataCache.remove('current_$item');
+                            }
                           } else {
-                            if (_currentSelects.length < 3)
+                            if (_currentSelects.length < 3) {
                               _currentSelects.add(item);
+                              _refreshChartData('current_$item', item);
+                            }
                           }
                         });
                       }, accentColor: TechColors.glowCyan),
@@ -388,19 +430,23 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                       const SizedBox(width: 8),
                       RefreshButton(
                           accentColor: TechColors.glowCyan,
-                          onPressed: () => setState(() {})),
+                          onPressed: () {
+                            setState(() {
+                              for (var item in _currentSelects) {
+                                _refreshChartData('current_$item', item);
+                              }
+                            });
+                          }),
                       const SizedBox(width: 8),
                       _buildExportButton(
                           '电炉电流',
-                          _generateMockData(_currentSelects.isNotEmpty
-                              ? _currentSelects.first
-                              : '电极1电流'),
+                          _getCachedData('current_${_currentSelects.first}', _currentSelects.first),
                           accentColor: TechColors.glowCyan),
                     ],
                     child: TechLineChart(
                       data: [], // Ignored when datas is provided
                       datas: _currentSelects
-                          .map((type) => _generateMockData(type))
+                          .map((type) => _getCachedData('current_$type', type))
                           .toList(),
                       colors: const [
                         TechColors.glowCyan,
@@ -421,9 +467,12 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                     accentColor: TechColors.glowGreen,
                     height: double.infinity,
                     headerActions: [
-                      _buildDropdown(_powerOptions, _powerSelect,
-                          (v) => setState(() => _powerSelect = v!),
-                          accentColor: TechColors.glowGreen),
+                      _buildDropdown(_powerOptions, _powerSelect, (v) {
+                        setState(() {
+                          _powerSelect = v!;
+                          _refreshChartData('power', _powerSelect);
+                        });
+                      }, accentColor: TechColors.glowGreen),
                       const SizedBox(width: 12),
                       TimeRangeSelector(
                         accentColor: TechColors.glowGreen,
@@ -433,14 +482,13 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                       const SizedBox(width: 8),
                       RefreshButton(
                           accentColor: TechColors.glowGreen,
-                          onPressed: () => setState(() {})),
+                          onPressed: () => setState(() => _refreshChartData('power', _powerSelect))),
                       const SizedBox(width: 8),
-                      _buildExportButton(
-                          '电炉功率能耗', _generateMockData(_powerSelect),
+                      _buildExportButton('电炉功率能耗', _getCachedData('power', _powerSelect),
                           accentColor: TechColors.glowGreen),
                     ],
                     child: TechLineChart(
-                      data: _generateMockData(_powerSelect),
+                      data: _getCachedData('power', _powerSelect),
                       accentColor: TechColors.glowGreen,
                       yAxisLabel: _powerSelect == '能耗' ? 'kWh' : 'kW',
                     ),
@@ -461,9 +509,12 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                     accentColor: TechColors.glowBlue,
                     height: double.infinity,
                     headerActions: [
-                      _buildDropdown(_dustOptions, _dustSelect,
-                          (v) => setState(() => _dustSelect = v!),
-                          accentColor: TechColors.glowBlue),
+                      _buildDropdown(_dustOptions, _dustSelect, (v) {
+                        setState(() {
+                          _dustSelect = v!;
+                          _refreshChartData('dust', _dustSelect);
+                        });
+                      }, accentColor: TechColors.glowBlue),
                       const SizedBox(width: 12),
                       TimeRangeSelector(
                         accentColor: TechColors.glowBlue,
@@ -473,13 +524,13 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                       const SizedBox(width: 8),
                       RefreshButton(
                           accentColor: TechColors.glowBlue,
-                          onPressed: () => setState(() {})),
+                          onPressed: () => setState(() => _refreshChartData('dust', _dustSelect))),
                       const SizedBox(width: 8),
-                      _buildExportButton('除尘器', _generateMockData(_dustSelect),
+                      _buildExportButton('除尘器', _getCachedData('dust', _dustSelect),
                           accentColor: TechColors.glowBlue),
                     ],
                     child: TechLineChart(
-                      data: _generateMockData(_dustSelect),
+                      data: _getCachedData('dust', _dustSelect),
                       accentColor: TechColors.glowBlue,
                       yAxisLabel: _dustSelect.contains('温度')
                           ? '℃'
@@ -495,9 +546,12 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                     accentColor: TechColors.glowRed,
                     height: double.infinity,
                     headerActions: [
-                      _buildDropdown(_vibrationOptions, _vibrationSelect,
-                          (v) => setState(() => _vibrationSelect = v!),
-                          accentColor: TechColors.glowRed),
+                      _buildDropdown(_vibrationOptions, _vibrationSelect, (v) {
+                        setState(() {
+                          _vibrationSelect = v!;
+                          _refreshChartData('vibration', _vibrationSelect);
+                        });
+                      }, accentColor: TechColors.glowRed),
                       const SizedBox(width: 12),
                       TimeRangeSelector(
                         accentColor: TechColors.glowRed,
@@ -507,16 +561,15 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                       const SizedBox(width: 8),
                       RefreshButton(
                           accentColor: TechColors.glowRed,
-                          onPressed: () => setState(() {})),
+                          onPressed: () => setState(() => _refreshChartData('vibration', _vibrationSelect))),
                       const SizedBox(width: 8),
-                      _buildExportButton(
-                          '振动分析', _generateMockData(_vibrationSelect),
+                      _buildExportButton('振动分析', _getCachedData('vibration', _vibrationSelect),
                           accentColor: TechColors.glowRed),
                     ],
                     child: Stack(
                       children: [
                         TechLineChart(
-                          data: _generateMockData(_vibrationSelect),
+                          data: _getCachedData('vibration', _vibrationSelect),
                           accentColor: TechColors.glowRed,
                           yAxisLabel:
                               _vibrationSelect == '振动幅值' ? 'mm/s' : 'Hz',

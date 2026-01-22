@@ -27,22 +27,20 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildTimeButton(
-          label: '起',
           time: _startTime,
           onTap: () => _selectTime(context, true),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 3),
           child: Text(
-            '至',
+            '-',
             style: TextStyle(
               color: TechColors.textSecondary,
-              fontSize: 12,
+              fontSize: 11,
             ),
           ),
         ),
         _buildTimeButton(
-          label: '止',
           time: _endTime,
           onTap: () => _selectTime(context, false),
         ),
@@ -51,18 +49,18 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
   }
 
   Widget _buildTimeButton({
-    required String label,
     required DateTime time,
     required VoidCallback onTap,
   }) {
+    // 只显示月日，不显示时分
     final timeStr =
-        '${time.month}月${time.day}日 ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+        '${time.month.toString().padLeft(2, '0')}/${time.day.toString().padLeft(2, '0')}';
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
           color: widget.accentColor.withOpacity(0.1),
           border: Border.all(
@@ -71,33 +69,13 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
           ),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: widget.accentColor,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Icon(
-              Icons.access_time,
-              size: 13,
-              color: widget.accentColor.withOpacity(0.7),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              timeStr,
-              style: TextStyle(
-                color: TechColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        child: Text(
+          timeStr,
+          style: TextStyle(
+            color: TechColors.textPrimary,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

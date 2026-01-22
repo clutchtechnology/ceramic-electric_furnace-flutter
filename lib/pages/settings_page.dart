@@ -28,55 +28,97 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // 系统配置数据
   final TextEditingController _serverIpController =
-      TextEditingController(text: '192.168.1.100');
+      TextEditingController(text: 'localhost');
   final TextEditingController _serverPortController =
-      TextEditingController(text: '8080');
+      TextEditingController(text: '8082');
   final TextEditingController _plcIpController =
-      TextEditingController(text: '192.168.1.50');
+      TextEditingController(text: '192.168.1.10');
   final TextEditingController _plcPortController =
-      TextEditingController(text: '502');
-  String _plcProtocol = 'Modbus TCP';
+      TextEditingController(text: '102');
+  String _plcProtocol = 'S7 Protocol';
   final TextEditingController _dbAddressController =
-      TextEditingController(text: '192.168.1.200');
+      TextEditingController(text: 'localhost');
   final TextEditingController _dbPortController =
-      TextEditingController(text: '3306');
+      TextEditingController(text: '8089');
   final TextEditingController _dbUsernameController =
       TextEditingController(text: 'admin');
   final TextEditingController _dbPasswordController =
-      TextEditingController(text: '******');
+      TextEditingController(text: 'admin_password');
   bool _showPassword = false;
 
-  // 报警阈值数据
-  final TextEditingController _furnaceTemp1Controller =
-      TextEditingController(text: '1200');
-  final TextEditingController _furnaceTemp2Controller =
-      TextEditingController(text: '1200');
-  final TextEditingController _furnaceTemp3Controller =
-      TextEditingController(text: '1200');
-  final TextEditingController _furnaceTemp4Controller =
-      TextEditingController(text: '1200');
-  final TextEditingController _waterFlowMinController =
+  // ============ 报警阈值数据 ============
+
+  // 折叠控制
+  bool _arc1Expanded = false;
+  bool _arc2Expanded = false;
+  bool _arc3Expanded = false;
+  bool _distance1Expanded = false;
+  bool _distance2Expanded = false;
+  bool _distance3Expanded = false;
+  bool _pressureExpanded = false;
+  bool _flowExpanded = false;
+  bool _waterPressureExpanded = false;
+  bool _filterPressureDiffExpanded = false;
+
+  // 电弧1 电流阈值 (设定值: 5978 A, 低位: 5978*0.85=5081.3, 高位: 5978*1.15=6874.7)
+  final TextEditingController _arc1CurrentMinController =
+      TextEditingController(text: '5081');
+  final TextEditingController _arc1CurrentMaxController =
+      TextEditingController(text: '6875');
+
+  // 电弧2 电流阈值
+  final TextEditingController _arc2CurrentMinController =
+      TextEditingController(text: '5081');
+  final TextEditingController _arc2CurrentMaxController =
+      TextEditingController(text: '6875');
+
+  // 电弧3 电流阈值
+  final TextEditingController _arc3CurrentMinController =
+      TextEditingController(text: '5081');
+  final TextEditingController _arc3CurrentMaxController =
+      TextEditingController(text: '6875');
+
+  // 测距1/2/3 阈值 (单位: mm, 低点150mm=0.15m, 高点1960mm=1.96m)
+  final TextEditingController _distance1MinController =
+      TextEditingController(text: '150');
+  final TextEditingController _distance1MaxController =
+      TextEditingController(text: '1960');
+  final TextEditingController _distance2MinController =
+      TextEditingController(text: '150');
+  final TextEditingController _distance2MaxController =
+      TextEditingController(text: '1960');
+  final TextEditingController _distance3MinController =
+      TextEditingController(text: '150');
+  final TextEditingController _distance3MaxController =
+      TextEditingController(text: '1960');
+
+  // 压力阈值
+  final TextEditingController _pressureMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _pressureMaxController =
       TextEditingController(text: '10');
-  final TextEditingController _waterFlowMaxController =
-      TextEditingController(text: '50');
-  final TextEditingController _waterPressureMinController =
-      TextEditingController(text: '0.2');
-  final TextEditingController _waterPressureMaxController =
-      TextEditingController(text: '0.6');
-  final TextEditingController _filterPressureMinController =
+
+  // 流量阈值
+  final TextEditingController _flowMinController =
       TextEditingController(text: '0');
-  final TextEditingController _filterPressureMaxController =
+  final TextEditingController _flowMaxController =
       TextEditingController(text: '100');
-  final TextEditingController _pm10MaxController =
-      TextEditingController(text: '75');
-  final TextEditingController _fanVibrationMinController =
+
+  // 炉皮冷却水水压阈值
+  final TextEditingController _waterPressure1MinController =
       TextEditingController(text: '0');
-  final TextEditingController _fanVibrationMaxController =
-      TextEditingController(text: '5');
-  final TextEditingController _fanFrequencyMinController =
-      TextEditingController(text: '45');
-  final TextEditingController _fanFrequencyMaxController =
-      TextEditingController(text: '55');
+  final TextEditingController _waterPressure1MaxController =
+      TextEditingController(text: '1.0');
+  final TextEditingController _waterPressure2MinController =
+      TextEditingController(text: '0');
+  final TextEditingController _waterPressure2MaxController =
+      TextEditingController(text: '1.0');
+
+  // 前置过滤器压差阈值 (水压1 - 水压2)
+  final TextEditingController _filterPressureDiffMinController =
+      TextEditingController(text: '0');
+  final TextEditingController _filterPressureDiffMaxController =
+      TextEditingController(text: '0.5');
 
   @override
   void dispose() {
@@ -89,21 +131,33 @@ class _SettingsPageState extends State<SettingsPage> {
     _dbPortController.dispose();
     _dbUsernameController.dispose();
     _dbPasswordController.dispose();
-    _furnaceTemp1Controller.dispose();
-    _furnaceTemp2Controller.dispose();
-    _furnaceTemp3Controller.dispose();
-    _furnaceTemp4Controller.dispose();
-    _waterFlowMinController.dispose();
-    _waterFlowMaxController.dispose();
-    _waterPressureMinController.dispose();
-    _waterPressureMaxController.dispose();
-    _filterPressureMinController.dispose();
-    _filterPressureMaxController.dispose();
-    _pm10MaxController.dispose();
-    _fanVibrationMinController.dispose();
-    _fanVibrationMaxController.dispose();
-    _fanFrequencyMinController.dispose();
-    _fanFrequencyMaxController.dispose();
+    // 电弧阈值
+    _arc1CurrentMinController.dispose();
+    _arc1CurrentMaxController.dispose();
+    _arc2CurrentMinController.dispose();
+    _arc2CurrentMaxController.dispose();
+    _arc3CurrentMinController.dispose();
+    _arc3CurrentMaxController.dispose();
+    // 测距阈值
+    _distance1MinController.dispose();
+    _distance1MaxController.dispose();
+    _distance2MinController.dispose();
+    _distance2MaxController.dispose();
+    _distance3MinController.dispose();
+    _distance3MaxController.dispose();
+    // 压力/流量阈值
+    _pressureMinController.dispose();
+    _pressureMaxController.dispose();
+    _flowMinController.dispose();
+    _flowMaxController.dispose();
+    // 冷却水水压阈值
+    _waterPressure1MinController.dispose();
+    _waterPressure1MaxController.dispose();
+    _waterPressure2MinController.dispose();
+    _waterPressure2MaxController.dispose();
+    // 前置过滤器压差阈值
+    _filterPressureDiffMinController.dispose();
+    _filterPressureDiffMaxController.dispose();
     super.dispose();
   }
 
@@ -306,8 +360,8 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildDropdownField(
               '通信协议',
               _plcProtocol,
-              ['Modbus TCP', 'Modbus RTU', 'Ethernet/IP', 'Profinet'],
-              (value) => setState(() => _plcProtocol = value ?? 'Modbus TCP'),
+              ['S7 Protocol', 'Modbus TCP', 'Modbus RTU', 'Ethernet/IP', 'Profinet'],
+              (value) => setState(() => _plcProtocol = value ?? 'S7 Protocol'),
             ),
           ],
         ),
@@ -348,57 +402,208 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 报警阈值页面内容
+  /// 报警阈值页面内容 (折叠样式)
   Widget _buildAlarmThresholdContent() {
     return Column(
       children: [
-        // 炉皮温度阈值
-        _buildConfigSection(
-          title: '炉皮温度阈值',
-          icon: Icons.thermostat,
-          accentColor: TechColors.statusWarning,
+        // ============ 电弧电流阈值 (设定值: 5978 A, ±15% 告警) ============
+        _buildCollapsibleSection(
+          title: '电弧1 电流阈值',
+          icon: Icons.flash_on,
+          accentColor: TechColors.glowOrange,
+          isExpanded: _arc1Expanded,
+          onToggle: () => setState(() => _arc1Expanded = !_arc1Expanded),
           children: [
             Row(
               children: [
                 Expanded(
                     child: _buildInputField(
-                        '点位1最高温度 (℃)', _furnaceTemp1Controller)),
+                        '电流低位告警 (A)', _arc1CurrentMinController)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _buildInputField(
-                        '点位2最高温度 (℃)', _furnaceTemp2Controller)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '点位3最高温度 (℃)', _furnaceTemp3Controller)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '点位4最高温度 (℃)', _furnaceTemp4Controller)),
+                        '电流高位告警 (A)', _arc1CurrentMaxController)),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        // 炉皮冷却水阈值
-        _buildConfigSection(
-          title: '炉皮冷却水阈值',
+        const SizedBox(height: 12),
+        _buildCollapsibleSection(
+          title: '电弧2 电流阈值',
+          icon: Icons.flash_on,
+          accentColor: TechColors.glowOrange,
+          isExpanded: _arc2Expanded,
+          onToggle: () => setState(() => _arc2Expanded = !_arc2Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '电流低位告警 (A)', _arc2CurrentMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '电流高位告警 (A)', _arc2CurrentMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildCollapsibleSection(
+          title: '电弧3 电流阈值',
+          icon: Icons.flash_on,
+          accentColor: TechColors.glowOrange,
+          isExpanded: _arc3Expanded,
+          onToggle: () => setState(() => _arc3Expanded = !_arc3Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '电流低位告警 (A)', _arc3CurrentMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '电流高位告警 (A)', _arc3CurrentMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 测距阈值 ============
+        _buildCollapsibleSection(
+          title: '测距1 阈值',
+          icon: Icons.straighten,
+          accentColor: TechColors.glowCyan,
+          isExpanded: _distance1Expanded,
+          onToggle: () =>
+              setState(() => _distance1Expanded = !_distance1Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '距离低位告警 (mm)', _distance1MinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '距离高位告警 (mm)', _distance1MaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildCollapsibleSection(
+          title: '测距2 阈值',
+          icon: Icons.straighten,
+          accentColor: TechColors.glowCyan,
+          isExpanded: _distance2Expanded,
+          onToggle: () =>
+              setState(() => _distance2Expanded = !_distance2Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '距离低位告警 (mm)', _distance2MinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '距离高位告警 (mm)', _distance2MaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildCollapsibleSection(
+          title: '测距3 阈值',
+          icon: Icons.straighten,
+          accentColor: TechColors.glowCyan,
+          isExpanded: _distance3Expanded,
+          onToggle: () =>
+              setState(() => _distance3Expanded = !_distance3Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '距离低位告警 (mm)', _distance3MinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '距离高位告警 (mm)', _distance3MaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 压力阈值 ============
+        _buildCollapsibleSection(
+          title: '压力阈值',
+          icon: Icons.speed,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _pressureExpanded,
+          onToggle: () =>
+              setState(() => _pressureExpanded = !_pressureExpanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildInputField(
+                        '压力低位告警 (MPa)', _pressureMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildInputField(
+                        '压力高位告警 (MPa)', _pressureMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 流量阈值 ============
+        _buildCollapsibleSection(
+          title: '流量阈值',
           icon: Icons.water_drop,
           accentColor: TechColors.glowBlue,
+          isExpanded: _flowExpanded,
+          onToggle: () => setState(() => _flowExpanded = !_flowExpanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child:
+                        _buildInputField('流量低位告警 (m³/h)', _flowMinController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child:
+                        _buildInputField('流量高位告警 (m³/h)', _flowMaxController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ============ 炉皮冷却水水压阈值 ============
+        _buildCollapsibleSection(
+          title: '炉皮冷却水水压阈值',
+          icon: Icons.water,
+          accentColor: TechColors.glowBlue,
+          isExpanded: _waterPressureExpanded,
+          onToggle: () =>
+              setState(() => _waterPressureExpanded = !_waterPressureExpanded),
           children: [
             Row(
               children: [
                 Expanded(
                     child: _buildInputField(
-                        '流速最低值 (m³/h)', _waterFlowMinController)),
+                        '水压1低位告警 (MPa)', _waterPressure1MinController)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _buildInputField(
-                        '流速最高值 (m³/h)', _waterFlowMaxController)),
+                        '水压1高位告警 (MPa)', _waterPressure1MaxController)),
               ],
             ),
             const SizedBox(height: 12),
@@ -406,80 +611,35 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Expanded(
                     child: _buildInputField(
-                        '水压最低值 (MPa)', _waterPressureMinController)),
+                        '水压2低位告警 (MPa)', _waterPressure2MinController)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _buildInputField(
-                        '水压最高值 (MPa)', _waterPressureMaxController)),
+                        '水压2高位告警 (MPa)', _waterPressure2MaxController)),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        // 前置过滤器压差阈值
-        _buildConfigSection(
+        const SizedBox(height: 12),
+
+        // ============ 前置过滤器压差阈值 ============
+        _buildCollapsibleSection(
           title: '前置过滤器压差阈值',
           icon: Icons.filter_alt,
-          accentColor: TechColors.glowGreen,
+          accentColor: const Color(0xFFffcc00),
+          isExpanded: _filterPressureDiffExpanded,
+          onToggle: () => setState(
+              () => _filterPressureDiffExpanded = !_filterPressureDiffExpanded),
           children: [
             Row(
               children: [
                 Expanded(
                     child: _buildInputField(
-                        '压差最小值 (Pa)', _filterPressureMinController)),
+                        '压差低位告警 (MPa)', _filterPressureDiffMinController)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _buildInputField(
-                        '压差最大值 (Pa)', _filterPressureMaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // 除尘排风口PM10阈值
-        _buildConfigSection(
-          title: '除尘排风口PM10阈值',
-          icon: Icons.air,
-          accentColor: TechColors.glowCyan,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        'PM10最大值 (μg/m³)', _pm10MaxController)),
-                const Expanded(child: SizedBox()),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // 除尘风机振动阈值
-        _buildConfigSection(
-          title: '除尘风机振动阈值',
-          icon: Icons.vibration,
-          accentColor: TechColors.statusWarning,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '振动幅值最小值 (mm/s)', _fanVibrationMinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '振动幅值最大值 (mm/s)', _fanVibrationMaxController)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '振动频率最小值 (Hz)', _fanFrequencyMinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '振动频率最大值 (Hz)', _fanFrequencyMaxController)),
+                        '压差高位告警 (MPa)', _filterPressureDiffMaxController)),
               ],
             ),
           ],
@@ -488,7 +648,66 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 配置区域容器
+  /// 折叠配置区域容器
+  Widget _buildCollapsibleSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+    Color accentColor = TechColors.glowCyan,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: TechColors.bgDark.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: TechColors.borderDark),
+      ),
+      child: Column(
+        children: [
+          // 标题栏（可点击展开/折叠）
+          InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(icon, color: accentColor, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: accentColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: TechColors.textSecondary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 展开内容
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+              child: Column(
+                children: children,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 配置区域容器 (非折叠)
   Widget _buildConfigSection({
     required String title,
     required IconData icon,
@@ -526,7 +745,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 输入框
+  /// 输入框（系统配置只读）
   Widget _buildInputField(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,6 +760,7 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 6),
         TextField(
           controller: controller,
+          readOnly: true, // 系统配置改为只读
           style: const TextStyle(
             color: TechColors.textPrimary,
             fontSize: 13,
@@ -569,7 +789,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 密码输入框
+  /// 密码输入框（只读）
   Widget _buildPasswordField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,6 +804,7 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 6),
         TextField(
           controller: _dbPasswordController,
+          readOnly: true, // 密码框改为只读
           obscureText: !_showPassword,
           style: const TextStyle(
             color: TechColors.textPrimary,
@@ -621,7 +842,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 下拉选择框
+  /// 下拉选择框（只读）
   Widget _buildDropdownField(
     String label,
     String value,
@@ -662,7 +883,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ))
                   .toList(),
-              onChanged: onChanged,
+              onChanged: null, // 下拉框禁用
               dropdownColor: TechColors.bgDark,
               icon: const Icon(
                 Icons.arrow_drop_down,

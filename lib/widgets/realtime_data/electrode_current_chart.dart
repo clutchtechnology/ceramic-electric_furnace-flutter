@@ -34,7 +34,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                   const Padding(
                     padding: EdgeInsets.only(left: 4),
                     child: Text(
-                      '电流 (kA)',
+                      '电流 (A)',
                       style: TextStyle(
                         color: TechColors.textSecondary,
                         fontSize: 14,
@@ -139,7 +139,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       value: electrode.setValue,
                       maxValue: maxValue,
                       color: TechColors.glowCyan,
-                      label: electrode.setValue.toStringAsFixed(1),
+                      label: electrode.setValue.toStringAsFixed(0), // 整数显示 (5978 A)
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -150,7 +150,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       value: electrode.actualValue,
                       maxValue: maxValue,
                       color: TechColors.glowOrange,
-                      label: electrode.actualValue.toStringAsFixed(1),
+                      label: electrode.actualValue.toStringAsFixed(0), // 整数显示 (A)
                     ),
                   ),
                 ],
@@ -192,6 +192,9 @@ class ElectrodeCurrentChart extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
                   style: TextStyle(
                     color: color,
                     fontSize: 12,

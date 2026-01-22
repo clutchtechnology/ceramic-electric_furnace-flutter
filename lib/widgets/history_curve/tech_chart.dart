@@ -36,6 +36,38 @@ class TechLineChart extends StatefulWidget {
 }
 
 class _TechLineChartState extends State<TechLineChart> {
+  /// 构建顶部坐标轴，显示单位标签（靠右）
+  AxisTitles _buildTopAxisWithUnit(String? label) {
+    if (label == null || label.isEmpty) {
+      return const AxisTitles(sideTitles: SideTitles(showTitles: false));
+    }
+
+    return AxisTitles(
+      sideTitles: SideTitles(
+        showTitles: true,
+        reservedSize: 20,
+        getTitlesWidget: (value, meta) {
+          // 只在最右侧显示单位标签
+          if (value == meta.max) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0, bottom: 4.0),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: TechColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 准备显示的数据系列
@@ -45,10 +77,70 @@ class _TechLineChartState extends State<TechLineChart> {
 
     // 检查是否有数据
     if (seriesList.isEmpty || seriesList.every((s) => s.isEmpty)) {
-      return Center(
-        child: Text(
-          '暂无数据',
-          style: TextStyle(color: TechColors.textSecondary, fontSize: 12),
+      // 无数据时显示空图表（仅坐标轴）
+      return Padding(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 16,
+          top: 24,
+          bottom: 10,
+        ),
+        child: LineChart(
+          LineChartData(
+            lineTouchData: LineTouchData(enabled: false),
+            gridData: FlGridData(
+              show: widget.showGrid,
+              drawVerticalLine: false,
+              horizontalInterval: 20,
+              getDrawingHorizontalLine: (value) {
+                return FlLine(
+                  color: TechColors.gridLine.withOpacity(0.5),
+                  strokeWidth: 1,
+                );
+              },
+            ),
+            titlesData: FlTitlesData(
+              show: true,
+              rightTitles:
+                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: _buildTopAxisWithUnit(widget.yAxisLabel),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 22,
+                  getTitlesWidget: (value, meta) {
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 40,
+                  interval: 20,
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      value.toStringAsFixed(1),
+                      style: const TextStyle(
+                        color: TechColors.textSecondary,
+                        fontSize: 10,
+                      ),
+                      textAlign: TextAlign.right,
+                    );
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(
+              show: true,
+              border: Border.all(color: TechColors.borderDark),
+            ),
+            minX: 0,
+            maxX: 10,
+            minY: 0,
+            maxY: 100,
+            lineBarsData: [],
+          ),
         ),
       );
     }
@@ -131,9 +223,8 @@ class _TechLineChartState extends State<TechLineChart> {
             // 右侧不显示
             rightTitles:
                 const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            // 顶部显示单位 (如果需要) 或不显示
-            topTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            // 顶部显示单位标签（靠右）
+            topTitles: _buildTopAxisWithUnit(widget.yAxisLabel),
             // 底部 X 轴
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
@@ -158,14 +249,8 @@ class _TechLineChartState extends State<TechLineChart> {
                 },
               ),
             ),
-            // 左侧 Y 轴
+            // 左侧 Y 轴（移除 axisNameWidget，单位已在顶部显示）
             leftTitles: AxisTitles(
-              axisNameWidget: widget.yAxisLabel != null
-                  ? Text(widget.yAxisLabel!,
-                      style: const TextStyle(
-                          color: TechColors.textSecondary, fontSize: 10))
-                  : null,
-              axisNameSize: 20,
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 40,
