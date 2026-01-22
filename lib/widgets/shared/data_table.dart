@@ -64,7 +64,7 @@ class _TechDataTableState extends State<TechDataTable> {
                     column,
                     style: TextStyle(
                       color: widget.accentColor,
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                     ),
@@ -118,7 +118,7 @@ class _TechDataTableState extends State<TechDataTable> {
               cellData,
               style: TextStyle(
                 color: TechColors.textSecondary,
-                fontSize: 14,
+                fontSize: 16,
               ),
               textAlign: TextAlign.center,
             ),
@@ -144,7 +144,7 @@ class _TechDataTableState extends State<TechDataTable> {
             '暂无数据',
             style: TextStyle(
               color: TechColors.textMuted,
-              fontSize: 15,
+              fontSize: 17,
             ),
           ),
         ],
