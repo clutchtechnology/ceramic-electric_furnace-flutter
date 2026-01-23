@@ -4,13 +4,13 @@ import '../widgets/history_curve/time_range_selector.dart';
 import '../widgets/history_curve/tech_chart.dart';
 import '../widgets/history_curve/tech_bar_chart.dart';
 import '../widgets/common/refresh_button.dart';
+import '../api/history_api.dart';
 import 'package:excel/excel.dart' as excel;
 import 'package:file_picker/file_picker.dart';
-import 'dart:math' as math;
 import 'dart:io';
 
 /// 历史曲线页面
-/// 包含四个面板：电炉能耗曲线、电炉炉皮温度曲线、前置过滤器压差曲线、除尘器入口温度
+/// 包含四个面板：电炉电流、料仓重量、炉皮冷却水、炉盖冷却水
 class HistoryCurvePage extends StatefulWidget {
   const HistoryCurvePage({super.key});
 
@@ -19,139 +19,280 @@ class HistoryCurvePage extends StatefulWidget {
 }
 
 class _HistoryCurvePageState extends State<HistoryCurvePage> {
-  // 状态变量
+  // API客户端
+  final HistoryApi _historyApi = HistoryApi();
+
+  // ====== 加载状态 ======
+  bool _isLoadingBatches = true; // 正在加载批次列表
+  bool _isLoadingData = false; // 正在加载历史数据
+  bool _isLoadingSummary = false; // 正在加载批次摘要
+
+  // ====== 状态变量 ======
   bool _isHistoryMode = false; // 是否为历史轮次查询模式
-  String _batchSelect = '批次202601001';
-  List<String> _selectedBatches = ['批次202601001']; // 历史模式下的多选批次
+  String? _selectedBatch; // 当前选中的批次（单选）
+  List<String> _selectedBatches = []; // 历史模式下的多选批次
   String _weightSelect = '料仓重量';
-  String _filterSelect = '前置过滤器压差';
-  final List<String> _currentSelects = ['电极1电流'];
+  String _shellCoolingSelect = '冷却水流速'; // 炉皮冷却水
+  String _lidCoolingSelect = '冷却水流速'; // 炉盖冷却水
+  List<String> _currentSelects = ['电极1电流'];
+  String _dustSelect = '除尘器振动';
   String _powerSelect = '瞬时功率';
-  String _dustSelect = '除尘器温度';
-  String _lidCoolingSelect = '冷却水流速';
 
-  // 下拉选项常量
-  final List<String> _batchOptions = ['批次202601001', '批次202601002', '批次202601003', '批次202601004'];
+  // 时间范围筛选 (可选)
+  DateTime? _startTime;
+  DateTime? _endTime;
+
+  // ====== 下拉选项 ======
+  List<String> _batchOptions = []; // 从后端API加载
   final List<String> _weightOptions = ['料仓重量', '投料重量'];
-  final List<String> _filterOptions = ['前置过滤器压差', '冷却水流速', '冷却水水压', '冷却水用量'];
+  final List<String> _coolingOptions = ['冷却水流速', '冷却水水压', '冷却水用量'];
   final List<String> _currentOptions = ['电极1电流', '电极2电流', '电极3电流'];
+  final List<String> _dustOptions = ['除尘器振动'];
   final List<String> _powerOptions = ['瞬时功率', '能耗'];
-  final List<String> _dustOptions = ['除尘器温度', '除尘器PM10浓度', '瞬时功率', '能耗'];
-  final List<String> _lidCoolingOptions = ['冷却水流速', '冷却水水压', '冷却水用量'];
 
-  // 辅助函数：生成模拟数据
-  List<ChartDataPoint> _generateMockData(String type) {
-    // 简单根据类型返回不同的模拟数据范围
-    double base = 100;
-    double variance = 20;
+  // ====== 图表数据缓存（来自API） ======
+  Map<String, List<HistoryDataPoint>> _currentData = {}; // 电极电流数据
+  List<HistoryDataPoint> _hopperData = []; // 料仓数据
+  List<HistoryDataPoint> _shellCoolingData = []; // 炉皮冷却水数据
+  List<HistoryDataPoint> _coverCoolingData = []; // 炉盖冷却水数据
 
-    if (type.contains('重量') || type.contains('kg')) {
-      base = 2000;
-      variance = 100;
-    } else if (type.contains('压差')) {
-      base = 125;
-      variance = 10;
-    } else if (type.contains('流速')) {
-      base = 2.5;
-      variance = 0.5;
-    } else if (type.contains('水压')) {
-      base = 0.18;
-      variance = 0.02;
-    } else if (type.contains('电流')) {
-      base = 30;
-      variance = 2;
-    } else if (type.contains('幅值')) {
-      base = 2.8;
-      variance = 0.5;
-    } else if (type.contains('频谱')) {
-      base = 50;
-      variance = 5;
-    } else if (type.contains('温度')) {
-      base = 85;
-      variance = 10;
-    } else if (type.contains('浓度')) {
-      base = 12;
-      variance = 3;
-    } else if (type.contains('功率')) {
-      base = 350;
-      variance = 40;
-    } else if (type.contains('能耗')) {
-      base = 1500;
-      variance = 500;
-    }
+  // ====== 历史模式柱状图数据 ======
+  List<BatchSummary> _batchSummaries = [];
 
-    final random = math.Random();
-    return List.generate(24, (index) {
-      final value = base + (random.nextDouble() - 0.5) * variance;
-      final time = DateTime.now().subtract(Duration(hours: 24 - index));
-      return ChartDataPoint(
-        label: '${time.hour.toString().padLeft(2, '0')}:00',
-        value: value,
-      );
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadBatches();
   }
 
-  // 生成批次对比模拟数据（用于历史轮次查询柱状图）
-  Map<String, double> _generateBatchMockData(String type) {
-    double base = 100;
-    double variance = 20;
+  /// 加载历史批次列表
+  Future<void> _loadBatches() async {
+    setState(() => _isLoadingBatches = true);
 
-    if (type.contains('重量') || type.contains('kg')) {
-      base = 2000;
-      variance = 100;
-    } else if (type.contains('压差')) {
-      base = 125;
-      variance = 10;
-    } else if (type.contains('流速')) {
-      base = 2.5;
-      variance = 0.5;
-    } else if (type.contains('水压')) {
-      base = 0.18;
-      variance = 0.02;
-    } else if (type.contains('电流')) {
-      base = 30;
-      variance = 2;
-    } else if (type.contains('温度')) {
-      base = 85;
-      variance = 10;
-    } else if (type.contains('浓度')) {
-      base = 12;
-      variance = 3;
-    } else if (type.contains('功率')) {
-      base = 350;
-      variance = 40;
-    } else if (type.contains('能耗')) {
-      base = 1500;
-      variance = 500;
-    }
+    try {
+      final batches = await _historyApi.getBatches(hours: 720); // 30天
 
-    final random = math.Random();
-    final result = <String, double>{};
-    for (var batch in _selectedBatches) {
-      result[batch] = base + (random.nextDouble() - 0.5) * variance;
-    }
-    return result;
-  }
+      if (mounted) {
+        setState(() {
+          _batchOptions = batches;
+          _isLoadingBatches = false;
 
-  // 生成分组批次对比数据（用于电流面板的多电极对比）
-  Map<String, Map<String, double>> _generateGroupedMockData() {
-    final random = math.Random();
-    final result = <String, Map<String, double>>{};
-    
-    for (var batch in _selectedBatches) {
-      final batchData = <String, double>{};
-      for (var electrode in _currentSelects) {
-        batchData[electrode] = 30 + (random.nextDouble() - 0.5) * 2;
+          // 如果有批次，默认选择第一个
+          if (batches.isNotEmpty) {
+            _selectedBatch = batches.first;
+            _selectedBatches = [batches.first];
+            // 加载该批次的数据
+            _loadBatchData();
+          }
+        });
       }
-      result[batch] = batchData;
+    } catch (e) {
+      print('[HistoryCurvePage] 加载批次列表失败: $e');
+      if (mounted) {
+        setState(() => _isLoadingBatches = false);
+      }
+    }
+  }
+
+  /// 加载选中批次的历史数据（折线图模式）
+  Future<void> _loadBatchData() async {
+    if (_selectedBatch == null) return;
+
+    setState(() => _isLoadingData = true);
+
+    try {
+      // 并行发送4个API请求
+      final results = await Future.wait([
+        // 1. 电极电流
+        _historyApi.getCurrentHistory(
+          electrodes: _currentSelects
+              .map((e) => e.replaceAll('电极', '').replaceAll('电流', ''))
+              .toList(),
+          batchCode: _selectedBatch,
+          interval: '10m',
+          start: _startTime?.toIso8601String(),
+          end: _endTime?.toIso8601String(),
+          hours: 720,
+        ),
+        // 2. 料仓数据
+        _historyApi.getHopperHistory(
+          type: _weightSelect == '投料重量' ? 'feed' : 'weight',
+          batchCode: _selectedBatch,
+          interval: '10m',
+          start: _startTime?.toIso8601String(),
+          end: _endTime?.toIso8601String(),
+          hours: 720,
+        ),
+        // 3. 炉皮冷却水
+        _historyApi.getCoolingHistory(
+          type: _mapCoolingType(_shellCoolingSelect, 'shell'),
+          batchCode: _selectedBatch,
+          interval: '10m',
+          start: _startTime?.toIso8601String(),
+          end: _endTime?.toIso8601String(),
+          hours: 720,
+        ),
+        // 4. 炉盖冷却水
+        _historyApi.getCoolingHistory(
+          type: _mapCoolingType(_lidCoolingSelect, 'cover'),
+          batchCode: _selectedBatch,
+          interval: '10m',
+          start: _startTime?.toIso8601String(),
+          end: _endTime?.toIso8601String(),
+          hours: 720,
+        ),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _currentData = results[0] as Map<String, List<HistoryDataPoint>>;
+          _hopperData = results[1] as List<HistoryDataPoint>;
+          _shellCoolingData = results[2] as List<HistoryDataPoint>;
+          _coverCoolingData = results[3] as List<HistoryDataPoint>;
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      print('[HistoryCurvePage] 加载历史数据失败: $e');
+      if (mounted) {
+        setState(() => _isLoadingData = false);
+      }
+    }
+  }
+
+  /// 加载批次摘要数据（柱状图模式）
+  Future<void> _loadBatchSummaries() async {
+    if (_selectedBatches.isEmpty) return;
+
+    setState(() => _isLoadingSummary = true);
+
+    try {
+      final summaries = await _historyApi.getBatchSummaries(_selectedBatches);
+
+      if (mounted) {
+        setState(() {
+          _batchSummaries = summaries;
+          _isLoadingSummary = false;
+        });
+      }
+    } catch (e) {
+      print('[HistoryCurvePage] 加载批次摘要失败: $e');
+      if (mounted) {
+        setState(() => _isLoadingSummary = false);
+      }
+    }
+  }
+
+  /// 映射冷却水类型到API参数
+  String _mapCoolingType(String uiSelect, String position) {
+    switch (uiSelect) {
+      case '冷却水流速':
+        return 'flow_$position';
+      case '冷却水水压':
+        return 'pressure_$position';
+      case '冷却水用量':
+        return 'flow_$position'; // 用量也用flow，前端累加或后端有WATER_TOTAL
+      default:
+        return 'flow_$position';
+    }
+  }
+
+  /// 将 HistoryDataPoint 转换为 ChartDataPoint
+  List<ChartDataPoint> _convertToChartData(List<HistoryDataPoint> data) {
+    return data.map((point) {
+      final time = DateTime.tryParse(point.time);
+      final label = time != null
+          ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
+          : point.time;
+      return ChartDataPoint(label: label, value: point.value);
+    }).toList();
+  }
+
+  /// 获取电极电流图表数据
+  List<List<ChartDataPoint>> _getCurrentChartData() {
+    final result = <List<ChartDataPoint>>[];
+    for (final electrode in _currentSelects) {
+      final key =
+          'electrode_${electrode.replaceAll('电极', '').replaceAll('电流', '')}';
+      final data = _currentData[key] ?? [];
+      result.add(_convertToChartData(data));
     }
     return result;
+  }
+
+  /// 获取料仓柱状图数据（历史模式）
+  Map<String, double> _getFeedWeightBatchData() {
+    final result = <String, double>{};
+    for (final summary in _batchSummaries) {
+      result[summary.batchCode] = summary.feedWeight ?? 0.0;
+    }
+    return result;
+  }
+
+  /// 获取炉皮冷却水柱状图数据（历史模式）
+  Map<String, double> _getShellWaterBatchData() {
+    final result = <String, double>{};
+    for (final summary in _batchSummaries) {
+      result[summary.batchCode] = summary.shellWaterTotal ?? 0.0;
+    }
+    return result;
+  }
+
+  /// 获取炉盖冷却水柱状图数据（历史模式）
+  Map<String, double> _getCoverWaterBatchData() {
+    final result = <String, double>{};
+    for (final summary in _batchSummaries) {
+      result[summary.batchCode] = summary.coverWaterTotal ?? 0.0;
+    }
+    return result;
+  }
+
+  /// 刷新所有数据
+  void _refreshAllData() {
+    if (_isHistoryMode) {
+      _loadBatchSummaries();
+    } else {
+      _loadBatchData();
+    }
+  }
+
+  /// 处理批次选择变化（单选模式）
+  void _onBatchSelected(String? batch) {
+    if (batch == null) return;
+    setState(() {
+      _selectedBatch = batch;
+    });
+    _loadBatchData();
+  }
+
+  /// 处理批次多选变化（历史模式）
+  void _onBatchToggled(String batch) {
+    setState(() {
+      if (_selectedBatches.contains(batch)) {
+        if (_selectedBatches.length > 1) {
+          _selectedBatches.remove(batch);
+        }
+      } else {
+        _selectedBatches.add(batch);
+      }
+    });
+    _loadBatchSummaries();
+  }
+
+  /// 处理时间范围变化
+  void _onTimeRangeChanged(DateTime start, DateTime end) {
+    setState(() {
+      _startTime = start;
+      _endTime = end;
+    });
+    _loadBatchData();
   }
 
   // 构建下拉菜单辅助组件
   Widget _buildDropdown(
-      List<String> items, String value, ValueChanged<String?> onChanged,
+      List<String> items, String? value, ValueChanged<String?> onChanged,
       {required Color accentColor}) {
+    final displayValue = value ?? (items.isNotEmpty ? items.first : '无数据');
     return PopupMenuButton<String>(
       initialValue: value,
       tooltip: '选择显示项',
@@ -174,7 +315,7 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              value,
+              displayValue,
               style:
                   const TextStyle(color: TechColors.textPrimary, fontSize: 16),
             ),
@@ -351,8 +492,15 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
             onTap: () {
               setState(() {
                 _isHistoryMode = !_isHistoryMode;
-                if (_isHistoryMode && _selectedBatches.isEmpty) {
-                  _selectedBatches = [_batchSelect];
+                if (_isHistoryMode) {
+                  // 切换到历史模式，确保有选中的批次
+                  if (_selectedBatches.isEmpty && _selectedBatch != null) {
+                    _selectedBatches = [_selectedBatch!];
+                  }
+                  _loadBatchSummaries();
+                } else {
+                  // 切换回折线图模式
+                  _loadBatchData();
                 }
               });
             },
@@ -396,26 +544,29 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
           ),
           const SizedBox(width: 24),
           // 批次编号选择器（根据模式切换单选/多选）
-          if (_isHistoryMode)
+          if (_isLoadingBatches)
+            const SizedBox(
+              width: 100,
+              child: Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else if (_isHistoryMode)
             _buildMultiSelectDropdown(
               _batchOptions,
               _selectedBatches,
-              (item) {
-                setState(() {
-                  if (_selectedBatches.contains(item)) {
-                    if (_selectedBatches.length > 1) _selectedBatches.remove(item);
-                  } else {
-                    _selectedBatches.add(item);
-                  }
-                });
-              },
+              _onBatchToggled,
               accentColor: TechColors.glowCyan,
             )
           else
             _buildDropdown(
               _batchOptions,
-              _batchSelect,
-              (v) => setState(() => _batchSelect = v!),
+              _selectedBatch,
+              _onBatchSelected,
               accentColor: TechColors.glowCyan,
             ),
           const SizedBox(width: 24),
@@ -423,14 +574,24 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
           if (!_isHistoryMode)
             TimeRangeSelector(
               accentColor: TechColors.glowCyan,
-              onTimeRangeChanged: (start, end) =>
-                  debugPrint('Time: $start - $end'),
+              onTimeRangeChanged: _onTimeRangeChanged,
             ),
           const Spacer(),
+          // 加载状态指示器
+          if (_isLoadingData || _isLoadingSummary)
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: TechColors.glowCyan),
+              ),
+            ),
           // 刷新按钮
           RefreshButton(
             accentColor: TechColors.glowCyan,
-            onPressed: () => setState(() {}),
+            onPressed: _refreshAllData,
           ),
         ],
       ),
@@ -447,123 +608,78 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
           // 页面控制栏
           _buildControlBar(),
           const SizedBox(height: 8),
-          // 历史轮次查询模式：1列3行布局
+          // 历史轮次查询模式：垂直滚动布局 (每个图表固定高度，防止变形)
           if (_isHistoryMode) ...[
-            // 1. 料仓重量
             Expanded(
-              child: TechPanel(
-                title: '料仓重量',
-                accentColor: TechColors.glowOrange,
-                height: double.infinity,
-                headerActions: [
-                  _buildExportButton('料仓重量', _generateMockData('料仓重量'),
-                      accentColor: TechColors.glowOrange),
-                ],
-                child: TechBarChart(
-                  batchData: _generateBatchMockData('料仓重量'),
-                  accentColor: TechColors.glowOrange,
-                  yAxisLabel: 'kg',
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // 2. 炉皮冷却水用量
-            Expanded(
-              child: TechPanel(
-                title: '炉皮冷却水用量',
-                accentColor: TechColors.glowBlue,
-                height: double.infinity,
-                headerActions: [
-                  _buildExportButton('炉皮冷却水用量', _generateMockData('冷却水用量'),
-                      accentColor: TechColors.glowBlue),
-                ],
-                child: TechBarChart(
-                  batchData: _generateBatchMockData('冷却水用量'),
-                  accentColor: TechColors.glowBlue,
-                  yAxisLabel: 'm³',
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // 3. 炉盖冷却水用量
-            Expanded(
-              child: TechPanel(
-                title: '炉盖冷却水用量',
-                accentColor: TechColors.glowCyan,
-                height: double.infinity,
-                headerActions: [
-                  _buildExportButton('炉盖冷却水用量', _generateMockData('冷却水用量'),
-                      accentColor: TechColors.glowCyan),
-                ],
-                child: TechBarChart(
-                  batchData: _generateBatchMockData('冷却水用量'),
-                  accentColor: TechColors.glowCyan,
-                  yAxisLabel: 'm³',
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(right: 8, bottom: 8),
+                child: Column(
+                  children: [
+                    // 1. 投料重量对比 - 固定高度容器
+                    SizedBox(
+                      height: 400, // 固定高度 400px
+                      child: TechPanel(
+                        title: '投料重量对比',
+                        accentColor: TechColors.glowOrange,
+                        height: double.infinity,
+                        child: _isLoadingSummary
+                            ? const Center(child: CircularProgressIndicator())
+                            : TechBarChart(
+                                batchData: _getFeedWeightBatchData(),
+                                accentColor: TechColors.glowOrange,
+                                yAxisLabel: 'kg',
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // 2. 炉皮冷却水用量对比 - 固定高度容器
+                    SizedBox(
+                      height: 400, // 固定高度 400px
+                      child: TechPanel(
+                        title: '炉皮冷却水用量对比',
+                        accentColor: TechColors.glowBlue,
+                        height: double.infinity,
+                        child: _isLoadingSummary
+                            ? const Center(child: CircularProgressIndicator())
+                            : TechBarChart(
+                                batchData: _getShellWaterBatchData(),
+                                accentColor: TechColors.glowBlue,
+                                yAxisLabel: 'm³',
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // 3. 炉盖冷却水用量对比 - 固定高度容器
+                    SizedBox(
+                      height: 400, // 固定高度 400px
+                      child: TechPanel(
+                        title: '炉盖冷却水用量对比',
+                        accentColor: TechColors.glowCyan,
+                        height: double.infinity,
+                        child: _isLoadingSummary
+                            ? const Center(child: CircularProgressIndicator())
+                            : TechBarChart(
+                                batchData: _getCoverWaterBatchData(),
+                                accentColor: TechColors.glowCyan,
+                                yAxisLabel: 'm³',
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ]
-          // 非历史模式：2列3行布局
+          // 非历史模式：2列3行布局 (折线图)
+          // 顺序：电炉电流 | 料仓重量
+          //      炉皮冷却水 | 炉盖冷却水
+          //      除尘器振动 | 电炉功率（暂无数据）
           else ...[
-            // Row 1
+            // Row 1: 电炉电流 | 料仓重量
             Expanded(
               child: Row(
                 children: [
-                  // 1. 料仓重量/投料重量
-                  Expanded(
-                    child: TechPanel(
-                      title: '料仓',
-                      accentColor: TechColors.glowOrange,
-                      height: double.infinity,
-                      headerActions: [
-                        _buildDropdown(_weightOptions, _weightSelect,
-                            (v) => setState(() => _weightSelect = v!),
-                            accentColor: TechColors.glowOrange),
-                        const SizedBox(width: 8),
-                        _buildExportButton('料仓', _generateMockData(_weightSelect),
-                            accentColor: TechColors.glowOrange),
-                      ],
-                      child: TechLineChart(
-                        data: _generateMockData(_weightSelect),
-                        accentColor: TechColors.glowOrange,
-                        yAxisLabel: _weightSelect.contains('重量') ? 'kg' : '',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // 2. 炉皮冷却水
-                  Expanded(
-                    child: TechPanel(
-                      title: '炉皮冷却水',
-                      accentColor: TechColors.glowBlue,
-                      height: double.infinity,
-                      headerActions: [
-                        _buildDropdown(_filterOptions, _filterSelect,
-                            (v) => setState(() => _filterSelect = v!),
-                            accentColor: TechColors.glowBlue),
-                        const SizedBox(width: 8),
-                        _buildExportButton(
-                            '炉皮冷却水', _generateMockData(_filterSelect),
-                            accentColor: TechColors.glowBlue),
-                      ],
-                      child: TechLineChart(
-                        data: _generateMockData(_filterSelect),
-                        accentColor: TechColors.glowBlue,
-                        yAxisLabel: _filterSelect.contains('压')
-                            ? (_filterSelect.contains('差') ? 'Pa' : 'MPa')
-                            : (_filterSelect.contains('用量') ? 'm³' : 'm³/h'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Row 2
-            Expanded(
-              child: Row(
-                children: [
-                  // 3. 电炉电流 (多选)
+                  // 1. 电炉电流 (多选)
                   Expanded(
                     child: TechPanel(
                       title: '电炉电流',
@@ -574,114 +690,187 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                             _currentOptions, _currentSelects, (item) {
                           setState(() {
                             if (_currentSelects.contains(item)) {
-                              if (_currentSelects.length > 1)
+                              if (_currentSelects.length > 1) {
                                 _currentSelects.remove(item);
+                              }
                             } else {
-                              if (_currentSelects.length < 3)
+                              if (_currentSelects.length < 3) {
                                 _currentSelects.add(item);
+                              }
                             }
                           });
+                          // 重新加载电流数据
+                          _loadBatchData();
                         }, accentColor: TechColors.glowCyan),
                         const SizedBox(width: 8),
                         _buildExportButton(
                             '电炉电流',
-                            _generateMockData(_currentSelects.isNotEmpty
-                                ? _currentSelects.first
-                                : '电极1电流'),
+                            _convertToChartData(_currentData.values.isNotEmpty
+                                ? _currentData.values.first
+                                : []),
                             accentColor: TechColors.glowCyan),
                       ],
-                      child: TechLineChart(
-                        data: [], // Ignored when datas is provided
-                        datas: _currentSelects
-                            .map((type) => _generateMockData(type))
-                            .toList(),
-                        colors: const [
-                          TechColors.glowCyan,
-                          TechColors.glowGreen,
-                          TechColors.glowOrange
-                        ],
-                        accentColor: TechColors.glowCyan,
-                        yAxisLabel: '电流 (A)',
-                        showGrid: true,
-                      ),
+                      child: _isLoadingData
+                          ? const Center(child: CircularProgressIndicator())
+                          : TechLineChart(
+                              data: const [],
+                              datas: _getCurrentChartData(),
+                              colors: const [
+                                TechColors.glowCyan,
+                                TechColors.glowGreen,
+                                TechColors.glowOrange
+                              ],
+                              accentColor: TechColors.glowCyan,
+                              yAxisLabel: '电流 (A)',
+                              showGrid: true,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // 4. 电炉能耗/功率
+                  // 2. 料仓重量/投料重量
                   Expanded(
                     child: TechPanel(
-                      title: '电炉功率能耗',
-                      accentColor: TechColors.glowGreen,
+                      title: '料仓',
+                      accentColor: TechColors.glowOrange,
                       height: double.infinity,
                       headerActions: [
-                        _buildDropdown(_powerOptions, _powerSelect,
-                            (v) => setState(() => _powerSelect = v!),
-                            accentColor: TechColors.glowGreen),
+                        _buildDropdown(_weightOptions, _weightSelect, (v) {
+                          setState(() => _weightSelect = v!);
+                          _loadBatchData();
+                        }, accentColor: TechColors.glowOrange),
                         const SizedBox(width: 8),
                         _buildExportButton(
-                            '电炉功率能耗', _generateMockData(_powerSelect),
-                            accentColor: TechColors.glowGreen),
+                            '料仓', _convertToChartData(_hopperData),
+                            accentColor: TechColors.glowOrange),
                       ],
-                      child: TechLineChart(
-                        data: _generateMockData(_powerSelect),
-                        accentColor: TechColors.glowGreen,
-                        yAxisLabel: _powerSelect == '能耗' ? 'kWh' : 'kW',
-                      ),
+                      child: _isLoadingData
+                          ? const Center(child: CircularProgressIndicator())
+                          : TechLineChart(
+                              data: _convertToChartData(_hopperData),
+                              accentColor: TechColors.glowOrange,
+                              yAxisLabel:
+                                  _weightSelect.contains('重量') ? 'kg' : '',
+                            ),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            // Row 3
+            // Row 2: 炉皮冷却水 | 炉盖冷却水
             Expanded(
               child: Row(
                 children: [
-                  // 5. 除尘器 (四选一)
+                  // 3. 炉皮冷却水
                   Expanded(
                     child: TechPanel(
-                      title: '除尘器',
+                      title: '炉皮冷却水',
                       accentColor: TechColors.glowBlue,
                       height: double.infinity,
                       headerActions: [
-                        _buildDropdown(_dustOptions, _dustSelect,
-                            (v) => setState(() => _dustSelect = v!),
-                            accentColor: TechColors.glowBlue),
+                        _buildDropdown(_coolingOptions, _shellCoolingSelect,
+                            (v) {
+                          setState(() => _shellCoolingSelect = v!);
+                          _loadBatchData();
+                        }, accentColor: TechColors.glowBlue),
                         const SizedBox(width: 8),
-                        _buildExportButton('除尘器', _generateMockData(_dustSelect),
+                        _buildExportButton(
+                            '炉皮冷却水', _convertToChartData(_shellCoolingData),
                             accentColor: TechColors.glowBlue),
                       ],
-                      child: TechLineChart(
-                        data: _generateMockData(_dustSelect),
-                        accentColor: TechColors.glowBlue,
-                        yAxisLabel: _dustSelect.contains('温度')
-                            ? '℃'
-                            : (_dustSelect.contains('浓度') ? 'ug/m³' : ''),
-                      ),
+                      child: _isLoadingData
+                          ? const Center(child: CircularProgressIndicator())
+                          : TechLineChart(
+                              data: _convertToChartData(_shellCoolingData),
+                              accentColor: TechColors.glowBlue,
+                              yAxisLabel: _shellCoolingSelect.contains('压')
+                                  ? 'MPa'
+                                  : (_shellCoolingSelect.contains('用量')
+                                      ? 'm³'
+                                      : 'm³/h'),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // 6. 炉盖冷却水
+                  // 4. 炉盖冷却水
                   Expanded(
                     child: TechPanel(
                       title: '炉盖冷却水',
                       accentColor: TechColors.glowOrange,
                       height: double.infinity,
                       headerActions: [
-                        _buildDropdown(_lidCoolingOptions, _lidCoolingSelect,
-                            (v) => setState(() => _lidCoolingSelect = v!),
-                            accentColor: TechColors.glowOrange),
+                        _buildDropdown(_coolingOptions, _lidCoolingSelect, (v) {
+                          setState(() => _lidCoolingSelect = v!);
+                          _loadBatchData();
+                        }, accentColor: TechColors.glowOrange),
                         const SizedBox(width: 8),
                         _buildExportButton(
-                            '炉盖冷却水', _generateMockData(_lidCoolingSelect),
+                            '炉盖冷却水', _convertToChartData(_coverCoolingData),
                             accentColor: TechColors.glowOrange),
                       ],
-                      child: TechLineChart(
-                        data: _generateMockData(_lidCoolingSelect),
-                        accentColor: TechColors.glowOrange,
-                        yAxisLabel: _lidCoolingSelect.contains('压')
-                            ? 'MPa'
-                            : (_lidCoolingSelect.contains('用量') ? 'm³' : 'm³/h'),
+                      child: _isLoadingData
+                          ? const Center(child: CircularProgressIndicator())
+                          : TechLineChart(
+                              data: _convertToChartData(_coverCoolingData),
+                              accentColor: TechColors.glowOrange,
+                              yAxisLabel: _lidCoolingSelect.contains('压')
+                                  ? 'MPa'
+                                  : (_lidCoolingSelect.contains('用量')
+                                      ? 'm³'
+                                      : 'm³/h'),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Row 3: 除尘器振动 | 电炉功率 （暂无数据，显示空）
+            Expanded(
+              child: Row(
+                children: [
+                  // 5. 除尘器振动 (暂无数据)
+                  Expanded(
+                    child: TechPanel(
+                      title: '除尘器振动',
+                      accentColor: TechColors.glowBlue,
+                      height: double.infinity,
+                      headerActions: [
+                        _buildDropdown(_dustOptions, _dustSelect,
+                            (v) => setState(() => _dustSelect = v!),
+                            accentColor: TechColors.glowBlue),
+                      ],
+                      child: const Center(
+                        child: Text(
+                          '暂无数据',
+                          style: TextStyle(
+                            color: TechColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 6. 电炉功率 (暂无数据)
+                  Expanded(
+                    child: TechPanel(
+                      title: '电炉功率',
+                      accentColor: TechColors.glowGreen,
+                      height: double.infinity,
+                      headerActions: [
+                        _buildDropdown(_powerOptions, _powerSelect,
+                            (v) => setState(() => _powerSelect = v!),
+                            accentColor: TechColors.glowGreen),
+                      ],
+                      child: const Center(
+                        child: Text(
+                          '暂无数据',
+                          style: TextStyle(
+                            color: TechColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ),
                   ),

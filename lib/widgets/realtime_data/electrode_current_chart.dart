@@ -5,10 +5,12 @@ import '../common/tech_line_widgets.dart';
 /// 显示三个电极的设定值和实际值对比
 class ElectrodeCurrentChart extends StatelessWidget {
   final List<ElectrodeData> electrodes;
+  final double deadzonePercent; // 死区百分比
 
   const ElectrodeCurrentChart({
     super.key,
     required this.electrodes,
+    this.deadzonePercent = 0.0,
   });
 
   @override
@@ -34,7 +36,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                   const Padding(
                     padding: EdgeInsets.only(left: 4),
                     child: Text(
-                      '电流 (A)',
+                      '弧流 (A)',
                       style: TextStyle(
                         color: TechColors.textSecondary,
                         fontSize: 18,
@@ -139,7 +141,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       value: electrode.setValue,
                       maxValue: maxValue,
                       color: TechColors.glowCyan,
-                      label: electrode.setValue.toStringAsFixed(0), // 整数显示 (5978 A)
+                      label: electrode.setValue
+                          .toStringAsFixed(0), // 整数显示 (5978 A)
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -150,7 +153,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       value: electrode.actualValue,
                       maxValue: maxValue,
                       color: TechColors.glowOrange,
-                      label: electrode.actualValue.toStringAsFixed(0), // 整数显示 (A)
+                      label:
+                          electrode.actualValue.toStringAsFixed(0), // 整数显示 (A)
                     ),
                   ),
                 ],
@@ -179,10 +183,16 @@ class ElectrodeCurrentChart extends StatelessWidget {
     required Color color,
     required String label,
   }) {
-    final heightRatio = value / maxValue;
+    // 保护: 避免 maxValue 为 0 或 NaN
+    final safeMaxValue = (maxValue <= 0 || maxValue.isNaN) ? 1.0 : maxValue;
+    // 保护: 限制 heightRatio 在 0.0 到 1.0 之间
+    final heightRatio = (value / safeMaxValue).clamp(0.0, 1.0);
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // 保护: 确保 maxHeight 有效
+        final maxHeight = constraints.maxHeight.isFinite ? constraints.maxHeight : 200.0;
+        
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -205,7 +215,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
             // 柱子
             Container(
               width: double.infinity,
-              height: constraints.maxHeight * heightRatio,
+              height: (maxHeight * heightRatio).clamp(0.0, maxHeight), // 再次确保高度有效
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
@@ -250,6 +260,16 @@ class ElectrodeCurrentChart extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 死区显示
+          Text(
+            '死区 ${deadzonePercent.toStringAsFixed(0)}%',
+            style: const TextStyle(
+              color: TechColors.glowGreen,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 12),
           _buildLegendItem('设定值', TechColors.glowCyan),
           const SizedBox(width: 12),
           _buildLegendItem('实际值', TechColors.glowOrange),

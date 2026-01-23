@@ -1,5 +1,144 @@
 /// 实时数据模型
-/// 对应后端 /api/furnace/realtime/batch 接口返回的数据
+/// 对应后端 /api/furnace/realtime/* 接口返回的数据
+
+/// ============================================================
+/// 弧流弧压数据 (快速接口 0.2s)
+/// 对应后端 /api/furnace/realtime/arc
+/// ============================================================
+class ArcRealtimeData {
+  final Map<String, double> arcCurrent; // 三相弧流 {U, V, W} (A)
+  final Map<String, double> arcVoltage; // 三相弧压 {U, V, W} (V)
+  final Map<String, double> setpoints; // 三相设定值 {U, V, W} (A)
+  final double manualDeadzonePercent; // 手动死区百分比 (%)
+  final String? timestamp;
+
+  ArcRealtimeData({
+    required this.arcCurrent,
+    required this.arcVoltage,
+    required this.setpoints,
+    required this.manualDeadzonePercent,
+    this.timestamp,
+  });
+
+  factory ArcRealtimeData.fromJson(Map<String, dynamic> json) {
+    return ArcRealtimeData(
+      arcCurrent: {
+        'U': (json['arc_current']?['U'] ?? 0.0).toDouble(),
+        'V': (json['arc_current']?['V'] ?? 0.0).toDouble(),
+        'W': (json['arc_current']?['W'] ?? 0.0).toDouble(),
+      },
+      arcVoltage: {
+        'U': (json['arc_voltage']?['U'] ?? 0.0).toDouble(),
+        'V': (json['arc_voltage']?['V'] ?? 0.0).toDouble(),
+        'W': (json['arc_voltage']?['W'] ?? 0.0).toDouble(),
+      },
+      setpoints: {
+        'U': (json['setpoints']?['U'] ?? 0.0).toDouble(),
+        'V': (json['setpoints']?['V'] ?? 0.0).toDouble(),
+        'W': (json['setpoints']?['W'] ?? 0.0).toDouble(),
+      },
+      manualDeadzonePercent:
+          (json['manual_deadzone_percent'] ?? 0.0).toDouble(),
+      timestamp: json['timestamp'],
+    );
+  }
+
+  factory ArcRealtimeData.empty() {
+    return ArcRealtimeData(
+      arcCurrent: {'U': 0.0, 'V': 0.0, 'W': 0.0},
+      arcVoltage: {'U': 0.0, 'V': 0.0, 'W': 0.0},
+      setpoints: {'U': 0.0, 'V': 0.0, 'W': 0.0},
+      manualDeadzonePercent: 0.0,
+    );
+  }
+}
+
+/// ============================================================
+/// 传感器数据 (慢速接口 0.5s)
+/// 对应后端 /api/furnace/realtime/sensor
+/// ============================================================
+class SensorRealtimeData {
+  final Map<String, double> electrodeDepths; // 三个电极深度 {1, 2, 3} (mm)
+  final Map<int, String> valveStatus; // 蝶阀状态 {1-4} ("01"开/"10"关/"00"停)
+  final Map<int, double> valveOpenness; // 蝶阀开度 {1-4} (%)
+  final CoolingRealtimeData cooling; // 冷却水数据
+  final HopperRealtimeData hopper; // 料仓数据
+  final BatchInfo? batch; // 批次信息
+  final String? timestamp;
+
+  SensorRealtimeData({
+    required this.electrodeDepths,
+    required this.valveStatus,
+    required this.valveOpenness,
+    required this.cooling,
+    required this.hopper,
+    this.batch,
+    this.timestamp,
+  });
+
+  factory SensorRealtimeData.fromJson(Map<String, dynamic> json) {
+    // 解析电极深度
+    final depthsJson = json['electrode_depths'] as Map<String, dynamic>? ?? {};
+    final depths = <String, double>{};
+    depthsJson.forEach((key, value) {
+      depths[key] = (value ?? 0.0).toDouble();
+    });
+
+    // 解析蝶阀状态
+    final statusJson = json['valve_status'] as Map<String, dynamic>? ?? {};
+    final statuses = <int, String>{};
+    statusJson.forEach((key, value) {
+      statuses[int.tryParse(key) ?? 0] = value?.toString() ?? '00';
+    });
+
+    // 解析蝶阀开度
+    // 后端返回格式: {"1": {"valve_id": 1, "openness_percent": 0.0, ...}, ...}
+    final opennessJson = json['valve_openness'] as Map<String, dynamic>? ?? {};
+    final openness = <int, double>{};
+    opennessJson.forEach((key, value) {
+      if (value is Map) {
+        // 嵌套对象格式，提取 openness_percent
+        openness[int.tryParse(key) ?? 0] =
+            (value['openness_percent'] ?? 0.0).toDouble();
+      } else {
+        // 简单数值格式 (向后兼容)
+        openness[int.tryParse(key) ?? 0] = (value ?? 0.0).toDouble();
+      }
+    });
+
+    return SensorRealtimeData(
+      electrodeDepths: depths,
+      valveStatus: statuses,
+      valveOpenness: openness,
+      cooling: CoolingRealtimeData.fromJson(json['cooling'] ?? {}),
+      hopper: HopperRealtimeData.fromJson(json['hopper'] ?? {}),
+      batch: json['batch'] != null ? BatchInfo.fromJson(json['batch']) : null,
+      timestamp: json['timestamp'],
+    );
+  }
+
+  factory SensorRealtimeData.empty() {
+    return SensorRealtimeData(
+      electrodeDepths: {'1': 0.0, '2': 0.0, '3': 0.0},
+      valveStatus: {1: '00', 2: '00', 3: '00', 4: '00'},
+      valveOpenness: {1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0},
+      cooling: CoolingRealtimeData(
+        furnaceShell:
+            CoolingWaterData(flowM3h: 0.0, pressureKPa: 0.0, totalM3: 0.0),
+        furnaceCover:
+            CoolingWaterData(flowM3h: 0.0, pressureKPa: 0.0, totalM3: 0.0),
+        filterPressureDiffKPa: 0.0,
+      ),
+      hopper: HopperRealtimeData(
+          weightKg: 0.0, feedingTotalKg: 0.0, success: false),
+      batch: BatchInfo(isSmelting: false),
+    );
+  }
+}
+
+/// ============================================================
+/// 原有模型 (保留兼容性)
+/// ============================================================
 
 /// 电极数据
 class ElectrodeRealtimeData {
@@ -62,19 +201,19 @@ class ElectricityRealtimeData {
 /// 冷却水数据（单个）
 class CoolingWaterData {
   final double flowM3h; // 流速 m³/h
-  final double pressureMPa; // 水压 MPa
+  final double pressureKPa; // 水压 kPa
   final double totalM3; // 累计用量 m³
 
   CoolingWaterData({
     required this.flowM3h,
-    required this.pressureMPa,
+    required this.pressureKPa,
     required this.totalM3,
   });
 
   factory CoolingWaterData.fromJson(Map<String, dynamic> json) {
     return CoolingWaterData(
       flowM3h: (json['flow_m3h'] ?? 0.0).toDouble(),
-      pressureMPa: (json['pressure_MPa'] ?? 0.0).toDouble(),
+      pressureKPa: (json['pressure_kPa'] ?? 0.0).toDouble(),
       totalM3: (json['total_m3'] ?? 0.0).toDouble(),
     );
   }
@@ -84,13 +223,13 @@ class CoolingWaterData {
 class CoolingRealtimeData {
   final CoolingWaterData furnaceShell; // 炉皮冷却水
   final CoolingWaterData furnaceCover; // 炉盖冷却水
-  final double filterPressureDiffMPa; // 前置过滤器压差 MPa
+  final double filterPressureDiffKPa; // 前置过滤器压差 kPa
   final String? timestamp;
 
   CoolingRealtimeData({
     required this.furnaceShell,
     required this.furnaceCover,
-    required this.filterPressureDiffMPa,
+    required this.filterPressureDiffKPa,
     this.timestamp,
   });
 
@@ -98,7 +237,7 @@ class CoolingRealtimeData {
     return CoolingRealtimeData(
       furnaceShell: CoolingWaterData.fromJson(json['furnace_shell'] ?? {}),
       furnaceCover: CoolingWaterData.fromJson(json['furnace_cover'] ?? {}),
-      filterPressureDiffMPa: (json['filter_pressure_diff_MPa'] ?? 0).toDouble(),
+      filterPressureDiffKPa: (json['filter_pressure_diff_kPa'] ?? 0).toDouble(),
       timestamp: json['timestamp'],
     );
   }
@@ -197,12 +336,14 @@ class RealtimeBatchData {
         currentsA: [0.0, 0.0, 0.0],
       ),
       cooling: CoolingRealtimeData(
-        furnaceShell: CoolingWaterData(flowM3h: 0.0, pressureMPa: 0.0, totalM3: 0.0),
-        furnaceCover: CoolingWaterData(flowM3h: 0.0, pressureMPa: 0.0, totalM3: 0.0),
-        filterPressureDiffMPa: 0.0,
+        furnaceShell:
+            CoolingWaterData(flowM3h: 0.0, pressureKPa: 0.0, totalM3: 0.0),
+        furnaceCover:
+            CoolingWaterData(flowM3h: 0.0, pressureKPa: 0.0, totalM3: 0.0),
+        filterPressureDiffKPa: 0.0,
       ),
-      hopper:
-          HopperRealtimeData(weightKg: 0.0, feedingTotalKg: 0.0, success: false),
+      hopper: HopperRealtimeData(
+          weightKg: 0.0, feedingTotalKg: 0.0, success: false),
       batch: BatchInfo(isSmelting: false),
     );
   }

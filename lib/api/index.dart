@@ -157,6 +157,38 @@ class ApiClient {
     }
   }
 
+  /// [NEW] 获取弧流弧压实时数据（快速接口，0.2s轮询）
+  /// 返回: arc_current, arc_voltage, setpoints, manual_deadzone_percent
+  Future<Map<String, dynamic>?> getRealtimeArc() async {
+    try {
+      final response = await get(Api.realtimeArc);
+      if (response != null && response['success'] == true) {
+        return response['data'];
+      }
+      return null;
+    } catch (e) {
+      // 高频调用，仅在调试时打印错误
+      // _logger.error('获取弧流弧压数据异常', e);
+      return null;
+    }
+  }
+
+  /// [NEW] 获取传感器实时数据（慢速接口，0.5s轮询）
+  /// 返回: electrode_depths, valve_status, valve_openness, cooling, hopper
+  Future<Map<String, dynamic>?> getRealtimeSensor() async {
+    try {
+      final response = await get(Api.realtimeSensor);
+      if (response != null && response['success'] == true) {
+        return response['data'];
+      }
+      return null;
+    } catch (e) {
+      // 高频调用，仅在调试时打印错误
+      // _logger.error('获取传感器数据异常', e);
+      return null;
+    }
+  }
+
   /// 获取健康状态
   Future<Map<String, dynamic>?> getHealth() async {
     try {

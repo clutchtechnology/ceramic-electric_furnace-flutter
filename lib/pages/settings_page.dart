@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/common/tech_line_widgets.dart';
 import '../models/app_state.dart';
+import '../api/valve_api.dart';
 
 /// 系统配置页面
 class SettingsPage extends StatefulWidget {
@@ -12,12 +13,59 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late AppState _appState;
+  final ValveApi _valveApi = ValveApi();
+
+  // 蝶阀配置加载状态
+  bool _isLoadingValveConfig = false;
+  String? _valveConfigError;
 
   @override
   void initState() {
     super.initState();
     _appState = AppState.instance;
     _appState.addListener(_onStateChanged);
+    _loadThresholdsFromAppState();
+  }
+
+  /// 从 AppState 加载阈值到 Controller
+  void _loadThresholdsFromAppState() {
+    _furnaceCoverFlowMinController.text =
+        _appState.furnaceCoverFlowMin.toString();
+    _furnaceCoverFlowMaxController.text =
+        _appState.furnaceCoverFlowMax.toString();
+    _furnaceCoverPressureMinController.text =
+        _appState.furnaceCoverPressureMin.toString();
+    _furnaceCoverPressureMaxController.text =
+        _appState.furnaceCoverPressureMax.toString();
+    _furnaceShellFlowMinController.text =
+        _appState.furnaceShellFlowMin.toString();
+    _furnaceShellFlowMaxController.text =
+        _appState.furnaceShellFlowMax.toString();
+    _furnaceShellPressureMinController.text =
+        _appState.furnaceShellPressureMin.toString();
+    _furnaceShellPressureMaxController.text =
+        _appState.furnaceShellPressureMax.toString();
+  }
+
+  /// 保存阈值到 AppState
+  Future<void> _saveThresholdsToAppState() async {
+    _appState.furnaceCoverFlowMin =
+        double.tryParse(_furnaceCoverFlowMinController.text) ?? 0.0;
+    _appState.furnaceCoverFlowMax =
+        double.tryParse(_furnaceCoverFlowMaxController.text) ?? 10.0;
+    _appState.furnaceCoverPressureMin =
+        double.tryParse(_furnaceCoverPressureMinController.text) ?? 0.0;
+    _appState.furnaceCoverPressureMax =
+        double.tryParse(_furnaceCoverPressureMaxController.text) ?? 1000.0;
+    _appState.furnaceShellFlowMin =
+        double.tryParse(_furnaceShellFlowMinController.text) ?? 0.0;
+    _appState.furnaceShellFlowMax =
+        double.tryParse(_furnaceShellFlowMaxController.text) ?? 10.0;
+    _appState.furnaceShellPressureMin =
+        double.tryParse(_furnaceShellPressureMinController.text) ?? 0.0;
+    _appState.furnaceShellPressureMax =
+        double.tryParse(_furnaceShellPressureMaxController.text) ?? 1000.0;
+    await _appState.saveAlarmThresholds();
   }
 
   void _onStateChanged() {
@@ -47,11 +95,9 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _showPassword = false;
 
   // ============ 报警阈值数据 ============
+  // 注意：电流/电压阈值已移除，这些值应从后端接口获取
 
   // 折叠控制
-  bool _arc1Expanded = false;
-  bool _arc2Expanded = false;
-  bool _arc3Expanded = false;
   bool _distance1Expanded = false;
   bool _distance2Expanded = false;
   bool _distance3Expanded = false;
@@ -60,27 +106,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _furnaceCoverPressureExpanded = false;
   bool _furnaceShellFlowExpanded = false;
   bool _furnaceShellPressureExpanded = false;
-  bool _arcVoltage1Expanded = false;
-  bool _arcVoltage2Expanded = false;
-  bool _arcVoltage3Expanded = false;
-
-  // 电弧1 电流阈值 (设定值: 5978 A, 低位: 5978*0.85=5081.3, 高位: 5978*1.15=6874.7)
-  final TextEditingController _arc1CurrentMinController =
-      TextEditingController(text: '5081');
-  final TextEditingController _arc1CurrentMaxController =
-      TextEditingController(text: '6875');
-
-  // 电弧2 电流阈值
-  final TextEditingController _arc2CurrentMinController =
-      TextEditingController(text: '5081');
-  final TextEditingController _arc2CurrentMaxController =
-      TextEditingController(text: '6875');
-
-  // 电弧3 电流阈值
-  final TextEditingController _arc3CurrentMinController =
-      TextEditingController(text: '5081');
-  final TextEditingController _arc3CurrentMaxController =
-      TextEditingController(text: '6875');
 
   // 测距1/2/3 阈值 (单位: mm, 低点150mm=0.15m, 高点1960mm=1.96m)
   final TextEditingController _distance1MinController =
@@ -96,11 +121,11 @@ class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _distance3MaxController =
       TextEditingController(text: '1960');
 
-  // 前置过滤器压差阈值 (水压1 - 水压2)
+  // 前置过滤器压差阈值 (kPa)
   final TextEditingController _filterPressureDiffMinController =
       TextEditingController(text: '0');
   final TextEditingController _filterPressureDiffMaxController =
-      TextEditingController(text: '0.5');
+      TextEditingController(text: '50');
 
   // 炉盖冷却水流速阈值 (m³/h)
   final TextEditingController _furnaceCoverFlowMinController =
@@ -108,11 +133,11 @@ class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _furnaceCoverFlowMaxController =
       TextEditingController(text: '10');
 
-  // 炉盖冷却水水压阈值 (MPa)
+  // 炉盖冷却水水压阈值 (kPa)
   final TextEditingController _furnaceCoverPressureMinController =
       TextEditingController(text: '0');
   final TextEditingController _furnaceCoverPressureMaxController =
-      TextEditingController(text: '1.0');
+      TextEditingController(text: '1000');
 
   // 炉皮冷却水流速阈值 (m³/h)
   final TextEditingController _furnaceShellFlowMinController =
@@ -120,25 +145,35 @@ class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _furnaceShellFlowMaxController =
       TextEditingController(text: '10');
 
-  // 炉皮冷却水水压阈值 (MPa)
+  // 炉皮冷却水水压阈值 (kPa)
   final TextEditingController _furnaceShellPressureMinController =
       TextEditingController(text: '0');
   final TextEditingController _furnaceShellPressureMaxController =
-      TextEditingController(text: '1.0');
+      TextEditingController(text: '1000');
 
-  // 弧压阈值 (V)
-  final TextEditingController _arcVoltage1MinController =
-      TextEditingController(text: '0');
-  final TextEditingController _arcVoltage1MaxController =
-      TextEditingController(text: '500');
-  final TextEditingController _arcVoltage2MinController =
-      TextEditingController(text: '0');
-  final TextEditingController _arcVoltage2MaxController =
-      TextEditingController(text: '500');
-  final TextEditingController _arcVoltage3MinController =
-      TextEditingController(text: '0');
-  final TextEditingController _arcVoltage3MaxController =
-      TextEditingController(text: '500');
+  // ============ 蝶阀配置数据 ============
+  bool _valve1Expanded = false;
+  bool _valve2Expanded = false;
+  bool _valve3Expanded = false;
+  bool _valve4Expanded = false;
+
+  // 蝶阀1-4 全开/全关时间 (秒)
+  final TextEditingController _valve1OpenTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _valve1CloseTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _valve2OpenTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _valve2CloseTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _valve3OpenTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _valve3CloseTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _valve4OpenTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _valve4CloseTimeController =
+      TextEditingController(text: '30');
 
   @override
   void dispose() {
@@ -151,13 +186,6 @@ class _SettingsPageState extends State<SettingsPage> {
     _dbPortController.dispose();
     _dbUsernameController.dispose();
     _dbPasswordController.dispose();
-    // 电弧阈值
-    _arc1CurrentMinController.dispose();
-    _arc1CurrentMaxController.dispose();
-    _arc2CurrentMinController.dispose();
-    _arc2CurrentMaxController.dispose();
-    _arc3CurrentMinController.dispose();
-    _arc3CurrentMaxController.dispose();
     // 测距阈值
     _distance1MinController.dispose();
     _distance1MaxController.dispose();
@@ -178,13 +206,15 @@ class _SettingsPageState extends State<SettingsPage> {
     _furnaceShellFlowMaxController.dispose();
     _furnaceShellPressureMinController.dispose();
     _furnaceShellPressureMaxController.dispose();
-    // 弧压阈值
-    _arcVoltage1MinController.dispose();
-    _arcVoltage1MaxController.dispose();
-    _arcVoltage2MinController.dispose();
-    _arcVoltage2MaxController.dispose();
-    _arcVoltage3MinController.dispose();
-    _arcVoltage3MaxController.dispose();
+    // 蝶阀配置
+    _valve1OpenTimeController.dispose();
+    _valve1CloseTimeController.dispose();
+    _valve2OpenTimeController.dispose();
+    _valve2CloseTimeController.dispose();
+    _valve3OpenTimeController.dispose();
+    _valve3CloseTimeController.dispose();
+    _valve4OpenTimeController.dispose();
+    _valve4CloseTimeController.dispose();
     super.dispose();
   }
 
@@ -213,6 +243,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final navItems = [
       {'title': '系统配置', 'icon': Icons.settings},
       {'title': '报警阈值', 'icon': Icons.warning_amber},
+      {'title': '蝶阀配置', 'icon': Icons.control_camera},
     ];
 
     return Container(
@@ -291,6 +322,20 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// 内容区域
   Widget _buildContent() {
+    // 根据当前选中的Tab返回标题
+    String _getTitle() {
+      switch (_appState.systemConfigTabIndex) {
+        case 0:
+          return '系统配置';
+        case 1:
+          return '报警阈值';
+        case 2:
+          return '蝶阀配置';
+        default:
+          return '系统配置';
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -307,7 +352,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(width: 12),
             Text(
-              _appState.systemConfigTabIndex == 0 ? '系统配置' : '报警阈值',
+              _getTitle(),
               style: const TextStyle(
                 color: TechColors.textPrimary,
                 fontSize: 28,
@@ -315,6 +360,36 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const Spacer(),
+            // 蝶阀配置页显示刷新按钮
+            if (_appState.systemConfigTabIndex == 2)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: ElevatedButton.icon(
+                  onPressed: _isLoadingValveConfig ? null : _loadValveConfig,
+                  icon: _isLoadingValveConfig
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: TechColors.glowCyan,
+                          ),
+                        )
+                      : const Icon(Icons.refresh, size: 22),
+                  label: Text(
+                    _isLoadingValveConfig ? '加载中...' : '刷新配置',
+                    style: const TextStyle(fontSize: 17),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: TechColors.glowGreen.withOpacity(0.2),
+                    foregroundColor: TechColors.glowGreen,
+                    side: BorderSide(
+                        color: TechColors.glowGreen.withOpacity(0.5)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                  ),
+                ),
+              ),
             ElevatedButton.icon(
               onPressed: _saveSettings,
               icon: const Icon(Icons.save, size: 26),
@@ -335,7 +410,9 @@ class _SettingsPageState extends State<SettingsPage> {
           child: SingleChildScrollView(
             child: _appState.systemConfigTabIndex == 0
                 ? _buildSystemConfigContent()
-                : _buildAlarmThresholdContent(),
+                : _appState.systemConfigTabIndex == 1
+                    ? _buildAlarmThresholdContent()
+                    : _buildValveConfigContent(),
           ),
         ),
       ],
@@ -387,7 +464,13 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildDropdownField(
               '通信协议',
               _plcProtocol,
-              ['S7 Protocol', 'Modbus TCP', 'Modbus RTU', 'Ethernet/IP', 'Profinet'],
+              [
+                'S7 Protocol',
+                'Modbus TCP',
+                'Modbus RTU',
+                'Ethernet/IP',
+                'Profinet'
+              ],
               (value) => setState(() => _plcProtocol = value ?? 'S7 Protocol'),
             ),
           ],
@@ -430,74 +513,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   /// 报警阈值页面内容 (折叠样式)
+  /// 注意：电流/电压阈值已移除，这些值应从后端接口获取
   Widget _buildAlarmThresholdContent() {
     return Column(
       children: [
-        // ============ 电弧电流阈值 (设定值: 5978 A, ±15% 告警) ============
-        _buildCollapsibleSection(
-          title: '电弧1 电流阈值',
-          icon: Icons.flash_on,
-          accentColor: TechColors.glowOrange,
-          isExpanded: _arc1Expanded,
-          onToggle: () => setState(() => _arc1Expanded = !_arc1Expanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '电流低位告警 (A)', _arc1CurrentMinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '电流高位告警 (A)', _arc1CurrentMaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildCollapsibleSection(
-          title: '电弧2 电流阈值',
-          icon: Icons.flash_on,
-          accentColor: TechColors.glowOrange,
-          isExpanded: _arc2Expanded,
-          onToggle: () => setState(() => _arc2Expanded = !_arc2Expanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '电流低位告警 (A)', _arc2CurrentMinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '电流高位告警 (A)', _arc2CurrentMaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildCollapsibleSection(
-          title: '电弧3 电流阈值',
-          icon: Icons.flash_on,
-          accentColor: TechColors.glowOrange,
-          isExpanded: _arc3Expanded,
-          onToggle: () => setState(() => _arc3Expanded = !_arc3Expanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '电流低位告警 (A)', _arc3CurrentMinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '电流高位告警 (A)', _arc3CurrentMaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
         // ============ 测距阈值 ============
         _buildCollapsibleSection(
           title: '测距1 阈值',
@@ -579,76 +598,11 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Expanded(
                     child: _buildInputField(
-                        '压差低位告警 (MPa)', _filterPressureDiffMinController)),
+                        '压差低位告警 (kPa)', _filterPressureDiffMinController)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _buildInputField(
-                        '压差高位告警 (MPa)', _filterPressureDiffMaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ============ 弧压阈值 ============
-        _buildCollapsibleSection(
-          title: '电弧1 弧压阈值',
-          icon: Icons.electrical_services,
-          accentColor: TechColors.glowGreen,
-          isExpanded: _arcVoltage1Expanded,
-          onToggle: () => setState(() => _arcVoltage1Expanded = !_arcVoltage1Expanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '弧压低位告警 (V)', _arcVoltage1MinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '弧压高位告警 (V)', _arcVoltage1MaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildCollapsibleSection(
-          title: '电弧2 弧压阈值',
-          icon: Icons.electrical_services,
-          accentColor: TechColors.glowGreen,
-          isExpanded: _arcVoltage2Expanded,
-          onToggle: () => setState(() => _arcVoltage2Expanded = !_arcVoltage2Expanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '弧压低位告警 (V)', _arcVoltage2MinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '弧压高位告警 (V)', _arcVoltage2MaxController)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildCollapsibleSection(
-          title: '电弧3 弧压阈值',
-          icon: Icons.electrical_services,
-          accentColor: TechColors.glowGreen,
-          isExpanded: _arcVoltage3Expanded,
-          onToggle: () => setState(() => _arcVoltage3Expanded = !_arcVoltage3Expanded),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child: _buildInputField(
-                        '弧压低位告警 (V)', _arcVoltage3MinController)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildInputField(
-                        '弧压高位告警 (V)', _arcVoltage3MaxController)),
+                        '压差高位告警 (kPa)', _filterPressureDiffMaxController)),
               ],
             ),
           ],
@@ -661,7 +615,8 @@ class _SettingsPageState extends State<SettingsPage> {
           icon: Icons.water,
           accentColor: TechColors.glowOrange,
           isExpanded: _furnaceCoverFlowExpanded,
-          onToggle: () => setState(() => _furnaceCoverFlowExpanded = !_furnaceCoverFlowExpanded),
+          onToggle: () => setState(
+              () => _furnaceCoverFlowExpanded = !_furnaceCoverFlowExpanded),
           children: [
             Row(
               children: [
@@ -684,17 +639,18 @@ class _SettingsPageState extends State<SettingsPage> {
           icon: Icons.opacity,
           accentColor: TechColors.glowBlue,
           isExpanded: _furnaceCoverPressureExpanded,
-          onToggle: () => setState(() => _furnaceCoverPressureExpanded = !_furnaceCoverPressureExpanded),
+          onToggle: () => setState(() =>
+              _furnaceCoverPressureExpanded = !_furnaceCoverPressureExpanded),
           children: [
             Row(
               children: [
                 Expanded(
                     child: _buildInputField(
-                        '水压低位告警 (MPa)', _furnaceCoverPressureMinController)),
+                        '水压低位告警 (kPa)', _furnaceCoverPressureMinController)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _buildInputField(
-                        '水压高位告警 (MPa)', _furnaceCoverPressureMaxController)),
+                        '水压高位告警 (kPa)', _furnaceCoverPressureMaxController)),
               ],
             ),
           ],
@@ -707,7 +663,8 @@ class _SettingsPageState extends State<SettingsPage> {
           icon: Icons.water,
           accentColor: TechColors.glowOrange,
           isExpanded: _furnaceShellFlowExpanded,
-          onToggle: () => setState(() => _furnaceShellFlowExpanded = !_furnaceShellFlowExpanded),
+          onToggle: () => setState(
+              () => _furnaceShellFlowExpanded = !_furnaceShellFlowExpanded),
           children: [
             Row(
               children: [
@@ -730,17 +687,18 @@ class _SettingsPageState extends State<SettingsPage> {
           icon: Icons.opacity,
           accentColor: TechColors.glowBlue,
           isExpanded: _furnaceShellPressureExpanded,
-          onToggle: () => setState(() => _furnaceShellPressureExpanded = !_furnaceShellPressureExpanded),
+          onToggle: () => setState(() =>
+              _furnaceShellPressureExpanded = !_furnaceShellPressureExpanded),
           children: [
             Row(
               children: [
                 Expanded(
                     child: _buildInputField(
-                        '水压低位告警 (MPa)', _furnaceShellPressureMinController)),
+                        '水压低位告警 (kPa)', _furnaceShellPressureMinController)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _buildInputField(
-                        '水压高位告警 (MPa)', _furnaceShellPressureMaxController)),
+                        '水压高位告警 (kPa)', _furnaceShellPressureMaxController)),
               ],
             ),
           ],
@@ -998,7 +956,18 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   /// 保存设置
-  void _saveSettings() {
+  void _saveSettings() async {
+    // 如果是蝶阀配置页面，调用专门的保存方法
+    if (_appState.systemConfigTabIndex == 2) {
+      _saveValveConfig();
+      return;
+    }
+
+    // 如果是报警阈值页面，保存阈值到 AppState
+    if (_appState.systemConfigTabIndex == 1) {
+      await _saveThresholdsToAppState();
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Row(
@@ -1014,6 +983,392 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: TechColors.glowGreen.withOpacity(0.5)),
         ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 蝶阀配置相关方法
+  // ============================================================
+
+  /// 蝶阀配置页面内容
+  Widget _buildValveConfigContent() {
+    return Column(
+      children: [
+        // 错误提示
+        if (_valveConfigError != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: TechColors.statusAlarm.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border:
+                  Border.all(color: TechColors.statusAlarm.withOpacity(0.5)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline,
+                    color: TechColors.statusAlarm, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _valveConfigError!,
+                    style: const TextStyle(
+                      color: TechColors.statusAlarm,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // 说明文字
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: TechColors.glowCyan.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: TechColors.glowCyan.withOpacity(0.3)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline, color: TechColors.glowCyan, size: 22),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '配置每个蝶阀从全关到全开所需的时间（秒），用于计算蝶阀开度百分比。默认值为30秒。',
+                  style: TextStyle(
+                    color: TechColors.textSecondary,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 蝶阀1配置
+        _buildCollapsibleSection(
+          title: '蝶阀1 全开/全关时间',
+          icon: Icons.control_camera,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _valve1Expanded,
+          onToggle: () => setState(() => _valve1Expanded = !_valve1Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全开时间 (秒)', _valve1OpenTimeController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全关时间 (秒)', _valve1CloseTimeController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // 蝶阀2配置
+        _buildCollapsibleSection(
+          title: '蝶阀2 全开/全关时间',
+          icon: Icons.control_camera,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _valve2Expanded,
+          onToggle: () => setState(() => _valve2Expanded = !_valve2Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全开时间 (秒)', _valve2OpenTimeController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全关时间 (秒)', _valve2CloseTimeController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // 蝶阀3配置
+        _buildCollapsibleSection(
+          title: '蝶阀3 全开/全关时间',
+          icon: Icons.control_camera,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _valve3Expanded,
+          onToggle: () => setState(() => _valve3Expanded = !_valve3Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全开时间 (秒)', _valve3OpenTimeController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全关时间 (秒)', _valve3CloseTimeController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // 蝶阀4配置
+        _buildCollapsibleSection(
+          title: '蝶阀4 全开/全关时间',
+          icon: Icons.control_camera,
+          accentColor: TechColors.glowGreen,
+          isExpanded: _valve4Expanded,
+          onToggle: () => setState(() => _valve4Expanded = !_valve4Expanded),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全开时间 (秒)', _valve4OpenTimeController)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildEditableInputField(
+                        '全关时间 (秒)', _valve4CloseTimeController)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 重置按钮
+        Container(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton.icon(
+            onPressed: _resetValveConfigToDefault,
+            icon: const Icon(Icons.restore, size: 22),
+            label: const Text('重置为默认值', style: TextStyle(fontSize: 17)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TechColors.glowOrange.withOpacity(0.2),
+              foregroundColor: TechColors.glowOrange,
+              side: BorderSide(color: TechColors.glowOrange.withOpacity(0.5)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 可编辑输入框
+  Widget _buildEditableInputField(
+      String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: TechColors.textSecondary,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(
+            color: TechColors.textPrimary,
+            fontSize: 19,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: TechColors.bgMedium.withOpacity(0.5),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: TechColors.borderDark),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: TechColors.borderDark),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide:
+                  BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 从后端加载蝶阀配置
+  Future<void> _loadValveConfig() async {
+    setState(() {
+      _isLoadingValveConfig = true;
+      _valveConfigError = null;
+    });
+
+    try {
+      final configs = await _valveApi.getValveConfig();
+
+      // 更新控制器的值
+      if (configs.containsKey('1')) {
+        _valve1OpenTimeController.text = configs['1']!.fullOpenTime.toString();
+        _valve1CloseTimeController.text =
+            configs['1']!.fullCloseTime.toString();
+      }
+      if (configs.containsKey('2')) {
+        _valve2OpenTimeController.text = configs['2']!.fullOpenTime.toString();
+        _valve2CloseTimeController.text =
+            configs['2']!.fullCloseTime.toString();
+      }
+      if (configs.containsKey('3')) {
+        _valve3OpenTimeController.text = configs['3']!.fullOpenTime.toString();
+        _valve3CloseTimeController.text =
+            configs['3']!.fullCloseTime.toString();
+      }
+      if (configs.containsKey('4')) {
+        _valve4OpenTimeController.text = configs['4']!.fullOpenTime.toString();
+        _valve4CloseTimeController.text =
+            configs['4']!.fullCloseTime.toString();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: TechColors.glowGreen, size: 22),
+                SizedBox(width: 8),
+                Text('蝶阀配置加载成功', style: TextStyle(fontSize: 17)),
+              ],
+            ),
+            backgroundColor: TechColors.bgDark,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _valveConfigError = '加载蝶阀配置失败: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingValveConfig = false;
+        });
+      }
+    }
+  }
+
+  /// 保存蝶阀配置到后端
+  Future<void> _saveValveConfig() async {
+    try {
+      // 解析输入值
+      final configs = <int, ValveConfig>{};
+
+      configs[1] = ValveConfig(
+        valveId: 1,
+        fullOpenTime: double.tryParse(_valve1OpenTimeController.text) ?? 30.0,
+        fullCloseTime: double.tryParse(_valve1CloseTimeController.text) ?? 30.0,
+      );
+      configs[2] = ValveConfig(
+        valveId: 2,
+        fullOpenTime: double.tryParse(_valve2OpenTimeController.text) ?? 30.0,
+        fullCloseTime: double.tryParse(_valve2CloseTimeController.text) ?? 30.0,
+      );
+      configs[3] = ValveConfig(
+        valveId: 3,
+        fullOpenTime: double.tryParse(_valve3OpenTimeController.text) ?? 30.0,
+        fullCloseTime: double.tryParse(_valve3CloseTimeController.text) ?? 30.0,
+      );
+      configs[4] = ValveConfig(
+        valveId: 4,
+        fullOpenTime: double.tryParse(_valve4OpenTimeController.text) ?? 30.0,
+        fullCloseTime: double.tryParse(_valve4CloseTimeController.text) ?? 30.0,
+      );
+
+      await _valveApi.updateAllValveConfig(configs);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: TechColors.glowGreen, size: 26),
+                SizedBox(width: 8),
+                Text('蝶阀配置保存成功', style: TextStyle(fontSize: 19)),
+              ],
+            ),
+            backgroundColor: TechColors.bgDark,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: TechColors.glowGreen.withOpacity(0.5)),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline,
+                    color: TechColors.statusAlarm, size: 26),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '保存蝶阀配置失败: $e',
+                    style: const TextStyle(fontSize: 17),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: TechColors.bgDark,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: TechColors.statusAlarm.withOpacity(0.5)),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 重置蝶阀配置为默认值
+  void _resetValveConfigToDefault() {
+    setState(() {
+      _valve1OpenTimeController.text = '30';
+      _valve1CloseTimeController.text = '30';
+      _valve2OpenTimeController.text = '30';
+      _valve2CloseTimeController.text = '30';
+      _valve3OpenTimeController.text = '30';
+      _valve3CloseTimeController.text = '30';
+      _valve4OpenTimeController.text = '30';
+      _valve4CloseTimeController.text = '30';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.restore, color: TechColors.glowOrange, size: 22),
+            SizedBox(width: 8),
+            Text('已重置为默认值 (30秒)', style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        backgroundColor: TechColors.bgDark,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
       ),
     );
   }

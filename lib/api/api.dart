@@ -15,6 +15,9 @@ class Api {
 
   // 实时数据
   static const String realtimeBatch = '/api/furnace/realtime/batch';
+  static const String realtimeArc = '/api/furnace/realtime/arc'; // 弧流弧压快速接口
+  static const String realtimeSensor =
+      '/api/furnace/realtime/sensor'; // 传感器慢速接口
 
   // 历史数据
   static const String history = '/api/furnace/history';
@@ -26,6 +29,8 @@ class Api {
   static const String historyCurrent = '/api/history/current'; // 电极电流历史
   static const String historyPower = '/api/history/power'; // 功率能耗历史
   static const String historyQuery = '/api/history/query'; // 通用查询
+  static const String historyBatchSummary =
+      '/api/history/batch/summary'; // 批次摘要（柱状图对比）
 
   // 设备状态
   static const String statusDb30 = '/api/status/db30'; // DB30 通信状态

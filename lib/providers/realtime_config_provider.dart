@@ -105,12 +105,14 @@ class ElectrodeThresholdConfig {
 class ThresholdConfig {
   final String key; // 设备键值
   final String displayName; // 显示名称
+  double minThreshold; // 下限 (深度计算用: 显示值 = 实际值 - 下限)
   double normalMax; // 正常上限
   double warningMax; // 警告上限（超过此值为报警）
 
   ThresholdConfig({
     required this.key,
     required this.displayName,
+    this.minThreshold = 0.0,
     this.normalMax = 0.0,
     this.warningMax = 0.0,
   });
@@ -118,6 +120,7 @@ class ThresholdConfig {
   Map<String, dynamic> toJson() => {
         'key': key,
         'displayName': displayName,
+        'minThreshold': minThreshold,
         'normalMax': normalMax,
         'warningMax': warningMax,
       };
@@ -126,18 +129,21 @@ class ThresholdConfig {
     return ThresholdConfig(
       key: json['key'] as String,
       displayName: json['displayName'] as String,
+      minThreshold: (json['minThreshold'] as num?)?.toDouble() ?? 0.0,
       normalMax: (json['normalMax'] as num?)?.toDouble() ?? 0.0,
       warningMax: (json['warningMax'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   ThresholdConfig copyWith({
+    double? minThreshold,
     double? normalMax,
     double? warningMax,
   }) {
     return ThresholdConfig(
       key: key,
       displayName: displayName,
+      minThreshold: minThreshold ?? this.minThreshold,
       normalMax: normalMax ?? this.normalMax,
       warningMax: warningMax ?? this.warningMax,
     );
@@ -204,24 +210,29 @@ class RealtimeConfigProvider extends ChangeNotifier {
 
   // ============================================================
   // 测距配置 (3个测距传感器)
-  // 单位: mm, 低点150mm=0.15m, 高点1960mm=1.96m
+  // 单位: mm
+  // 下限: 150mm (显示值 = 实际值 - 下限，<=0 报警)
+  // 上限: 1960mm (实际值 > 上限 报警)
   // ============================================================
   final List<ThresholdConfig> distanceConfigs = [
     ThresholdConfig(
       key: 'distance_1',
       displayName: '测距1',
-      normalMax: 1960.0,
+      minThreshold: 150.0, // 下限 150mm
+      normalMax: 1960.0, // 上限 1960mm
       warningMax: 2000.0,
     ),
     ThresholdConfig(
       key: 'distance_2',
       displayName: '测距2',
+      minThreshold: 150.0,
       normalMax: 1960.0,
       warningMax: 2000.0,
     ),
     ThresholdConfig(
       key: 'distance_3',
       displayName: '测距3',
+      minThreshold: 150.0,
       normalMax: 1960.0,
       warningMax: 2000.0,
     ),
@@ -325,7 +336,9 @@ class RealtimeConfigProvider extends ChangeNotifier {
     // 加载电极配置
     if (json.containsKey('electrodes')) {
       final electrodesJson = json['electrodes'] as List<dynamic>;
-      for (var i = 0; i < electrodesJson.length && i < electrodeConfigs.length; i++) {
+      for (var i = 0;
+          i < electrodesJson.length && i < electrodeConfigs.length;
+          i++) {
         final configJson = electrodesJson[i] as Map<String, dynamic>;
         electrodeConfigs[i] = ElectrodeThresholdConfig.fromJson(configJson);
       }
@@ -334,7 +347,9 @@ class RealtimeConfigProvider extends ChangeNotifier {
     // 加载测距配置
     if (json.containsKey('distances')) {
       final distancesJson = json['distances'] as List<dynamic>;
-      for (var i = 0; i < distancesJson.length && i < distanceConfigs.length; i++) {
+      for (var i = 0;
+          i < distancesJson.length && i < distanceConfigs.length;
+          i++) {
         final configJson = distancesJson[i] as Map<String, dynamic>;
         distanceConfigs[i] = ThresholdConfig.fromJson(configJson);
       }
@@ -343,7 +358,9 @@ class RealtimeConfigProvider extends ChangeNotifier {
     // 加载压力配置
     if (json.containsKey('pressures')) {
       final pressuresJson = json['pressures'] as List<dynamic>;
-      for (var i = 0; i < pressuresJson.length && i < pressureConfigs.length; i++) {
+      for (var i = 0;
+          i < pressuresJson.length && i < pressureConfigs.length;
+          i++) {
         final configJson = pressuresJson[i] as Map<String, dynamic>;
         pressureConfigs[i] = ThresholdConfig.fromJson(configJson);
       }
@@ -382,7 +399,8 @@ class RealtimeConfigProvider extends ChangeNotifier {
   }
 
   /// 更新电极配置
-  void updateElectrodeConfig(int index, {
+  void updateElectrodeConfig(
+    int index, {
     double? setValueA,
     double? lowAlarmA,
     double? highAlarmA,
@@ -401,7 +419,8 @@ class RealtimeConfigProvider extends ChangeNotifier {
   /// setValueA: 设定值 (A)
   /// lowPercent: 低位告警百分比 (例如 0.85 表示 85%)
   /// highPercent: 高位告警百分比 (例如 1.15 表示 115%)
-  void updateElectrodeConfigByPercent(int index, {
+  void updateElectrodeConfigByPercent(
+    int index, {
     required double setValueA,
     double lowPercent = 0.85,
     double highPercent = 1.15,

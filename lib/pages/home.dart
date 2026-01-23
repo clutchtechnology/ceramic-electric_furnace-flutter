@@ -185,7 +185,8 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🛑 轮询已停止 | 批次号: ${response.batchCode} | 运行时长: $duration'),
+            content:
+                Text('🛑 轮询已停止 | 批次号: ${response.batchCode} | 运行时长: $duration'),
             backgroundColor: TechColors.statusWarning,
             duration: const Duration(seconds: 3),
           ),
@@ -205,6 +206,144 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
           ),
         );
       }
+    }
+  }
+
+  /// 处理关闭窗口
+  /// [CRITICAL] 如果正在冶炼，需要二次确认
+  Future<void> _handleCloseWindow() async {
+    if (_isPollingRunning) {
+      // 正在冶炼，弹出二次确认弹窗
+      final shouldClose = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: TechColors.bgDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(
+                color: TechColors.statusWarning.withOpacity(0.5),
+                width: 1,
+              ),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: TechColors.statusWarning,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  '确认关闭',
+                  style: TextStyle(
+                    color: TechColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '系统当前正在运行数据采集',
+                  style: TextStyle(
+                    color: TechColors.textPrimary,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: TechColors.bgMedium,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: TechColors.statusNormal.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.play_circle_filled,
+                        color: TechColors.statusNormal,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '批次号: ${_currentBatchCode ?? 'N/A'}',
+                        style: TextStyle(
+                          color: TechColors.statusNormal,
+                          fontSize: 14,
+                          fontFamily: 'Roboto Mono',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '关闭程序将停止数据采集，确定要关闭吗？',
+                  style: TextStyle(
+                    color: TechColors.statusWarning,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                child: Text(
+                  '取消',
+                  style: TextStyle(
+                    color: TechColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: TechColors.statusAlarm,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                child: const Text(
+                  '确认关闭',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldClose == true) {
+        // 用户确认关闭，先停止轮询再关闭窗口
+        try {
+          await ControlApi.stopPolling();
+        } catch (e) {
+          debugPrint('关闭时停止轮询失败: $e');
+        }
+        await windowManager.close();
+      }
+    } else {
+      // 未在冶炼，直接关闭
+      await windowManager.close();
     }
   }
 
@@ -388,9 +527,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             ),
             // 关闭按钮
             IconButton(
-              onPressed: () async {
-                await windowManager.close();
-              },
+              onPressed: () => _handleCloseWindow(),
               icon: const Icon(
                 Icons.close,
                 color: TechColors.textSecondary,
@@ -528,7 +665,10 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             gradient: LinearGradient(
               colors: _isStarting
                   ? [Colors.grey.shade700, Colors.grey.shade800]
-                  : [TechColors.statusNormal, TechColors.statusNormal.withOpacity(0.8)],
+                  : [
+                      TechColors.statusNormal,
+                      TechColors.statusNormal.withOpacity(0.8)
+                    ],
             ),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
@@ -593,7 +733,10 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             gradient: LinearGradient(
               colors: _isStopping
                   ? [Colors.grey.shade700, Colors.grey.shade800]
-                  : [TechColors.statusAlarm, TechColors.statusAlarm.withOpacity(0.8)],
+                  : [
+                      TechColors.statusAlarm,
+                      TechColors.statusAlarm.withOpacity(0.8)
+                    ],
             ),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
@@ -631,9 +774,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 ),
               const SizedBox(width: 6),
               Text(
-                _isStopping
-                    ? '停止中...'
-                    : '停止验连 (${_currentBatchCode ?? 'N/A'})',
+                _isStopping ? '停止中...' : '停止验连 (${_currentBatchCode ?? 'N/A'})',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,

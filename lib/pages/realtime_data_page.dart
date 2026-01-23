@@ -14,6 +14,7 @@ import '../models/valve_status.dart';
 import '../api/index.dart';
 import '../api/valve_api.dart';
 import '../api/control_api.dart'; // 控制API
+import '../api/batch_api.dart'; // 批次管理API
 import '../tools/valve_calculator.dart';
 import '../api/api.dart';
 import '../services/alarm_service.dart';
@@ -51,12 +52,32 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     4: 0.0,
   };
 
-  /// 数据轮询定时器
-  Timer? _pollingTimer;
-  static const Duration _pollingInterval = Duration(seconds: 5);
+  /// ============================================================
+  /// 双速轮询架构 (稳定性优先)
+  /// - 弧流弧压: 0.2s 高频轮询 (arc_current, arc_voltage, setpoints)
+  /// - 传感器: 0.5s 低频轮询 (depths, valves, cooling, hopper)
+  /// ============================================================
+
+  /// 弧流弧压轮询定时器 (0.2s)
+  Timer? _arcPollingTimer;
+  static const Duration _arcPollingInterval = Duration(milliseconds: 200);
+
+  /// 传感器轮询定时器 (0.5s)
+  Timer? _sensorPollingTimer;
+  static const Duration _sensorPollingInterval = Duration(milliseconds: 500);
+
+  /// 弧流弧压实时数据
+  ArcRealtimeData _arcData = ArcRealtimeData.empty();
+
+  /// 传感器实时数据
+  SensorRealtimeData? _sensorData;
 
   /// 是否已暂停轮询（用于 Tab 切换）
   bool _isPollingPaused = false;
+
+  /// 防止并发请求的标志
+  bool _isArcFetching = false;
+  bool _isSensorFetching = false;
 
   @override
   void initState() {
@@ -64,67 +85,47 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     _appState = AppState.instance;
     _appState.addListener(_onStateChanged);
 
-    // [BACKEND_BYPASS_MODE] 初始化测试数据（带报警条件）
-    _initializeTestData();
+    // 初始化为空数据，等待后端返回真实数据
+    _realtimeData = RealtimeBatchData.empty();
 
-    // 启动数据轮询
+    // 加载蝶阀配置（从后端）
+    _loadValveConfig();
+
+    // 启动双速数据轮询
     _startPolling();
 
     // 立即获取一次数据
-    _fetchRealtimeData();
+    _fetchArcData();
+    _fetchSensorData();
+
+    // 检查断电恢复（延迟执行，等待界面渲染完成）
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _checkPowerRecovery();
+      }
+    });
   }
 
-  /// [BACKEND_BYPASS_MODE] 初始化测试数据，用于触发报警
-  void _initializeTestData() {
-    _realtimeData = RealtimeBatchData(
-      electrodes: [
-        ElectrodeRealtimeData(
-          id: 1, 
-          name: '电极1', 
-          depthMm: 100.0,  // 低于150mm阈值，会报警
-          currentA: 2989.0, 
-          voltageV: 135.0
-        ),
-        ElectrodeRealtimeData(
-          id: 2, 
-          name: '电极2', 
-          depthMm: 1055.0, 
-          currentA: 2989.0, 
-          voltageV: 135.0
-        ),
-        ElectrodeRealtimeData(
-          id: 3, 
-          name: '电极3', 
-          depthMm: 1055.0, 
-          currentA: 2989.0, 
-          voltageV: 135.0
-        ),
-      ],
-      electricity: ElectricityRealtimeData(
-        powerKW: 1210.0,
-        energyKWh: 550.0,
-        currentsA: [2989.0, 2989.0, 2989.0],
-      ),
-      cooling: CoolingRealtimeData(
-        furnaceShell: CoolingWaterData(
-          flowM3h: 2.5, 
-          pressureMPa: 0.18, 
-          totalM3: 12.5
-        ),
-        furnaceCover: CoolingWaterData(
-          flowM3h: 2.3, 
-          pressureMPa: 0.16, 
-          totalM3: 11.2
-        ),
-        filterPressureDiffMPa: 0.05,
-      ),
-      hopper: HopperRealtimeData(
-        weightKg: 1500.0, 
-        feedingTotalKg: 3200.0, 
-        success: true
-      ),
-      batch: BatchInfo(isSmelting: false),
-    );
+  /// 从后端加载蝶阀配置
+  Future<void> _loadValveConfig() async {
+    try {
+      final configMap = await _valveApi.getValveConfig();
+      // 转换为 ValveCalculator 需要的格式
+      Map<int, Map<String, double>> configs = {};
+      for (int i = 1; i <= 4; i++) {
+        final valveConfig = configMap['valve_$i'];
+        if (valveConfig != null) {
+          configs[i] = {
+            'full_open_time': valveConfig.fullOpenTime,
+            'full_close_time': valveConfig.fullCloseTime,
+          };
+        }
+      }
+      ValveCalculator.updateConfigs(configs);
+      debugPrint('[RealtimeDataPage] 蝶阀配置加载成功: $configs');
+    } catch (e) {
+      debugPrint('[RealtimeDataPage] 加载蝶阀配置失败，使用默认值: $e');
+    }
   }
 
   @override
@@ -135,81 +136,192 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     super.dispose();
   }
 
-  /// 启动数据轮询
+  /// ============================================================
+  /// 双速轮询控制
+  /// ============================================================
+
+  /// 启动双速轮询
   void _startPolling() {
-    if (_pollingTimer != null || _isPollingPaused) return;
-    _pollingTimer = Timer.periodic(_pollingInterval, (_) {
-      if (mounted && !_isPollingPaused) {
-        _fetchRealtimeData();
-      }
-    });
-    debugPrint(
-        '[RealtimeDataPage] 数据轮询已启动 (间隔: ${_pollingInterval.inSeconds}s)');
+    if (_isPollingPaused) return;
+
+    // 启动弧流弧压轮询 (0.2s)
+    if (_arcPollingTimer == null) {
+      _arcPollingTimer = Timer.periodic(_arcPollingInterval, (_) {
+        if (mounted && !_isPollingPaused) {
+          _fetchArcData();
+        }
+      });
+      debugPrint(
+          '[RealtimeDataPage] 弧流弧压轮询已启动 (间隔: ${_arcPollingInterval.inMilliseconds}ms)');
+    }
+
+    // 启动传感器轮询 (0.5s)
+    if (_sensorPollingTimer == null) {
+      _sensorPollingTimer = Timer.periodic(_sensorPollingInterval, (_) {
+        if (mounted && !_isPollingPaused) {
+          _fetchSensorData();
+        }
+      });
+      debugPrint(
+          '[RealtimeDataPage] 传感器轮询已启动 (间隔: ${_sensorPollingInterval.inMilliseconds}ms)');
+    }
   }
 
-  /// 停止数据轮询
+  /// 停止所有轮询
   void _stopPolling() {
-    _pollingTimer?.cancel();
-    _pollingTimer = null;
-    debugPrint('[RealtimeDataPage] 数据轮询已停止');
+    _arcPollingTimer?.cancel();
+    _arcPollingTimer = null;
+    _sensorPollingTimer?.cancel();
+    _sensorPollingTimer = null;
+    debugPrint('[RealtimeDataPage] 双速轮询已停止');
   }
 
   /// 暂停轮询（Tab 切换时调用）
   void pausePolling() {
     _isPollingPaused = true;
     _stopPolling();
-    debugPrint('[RealtimeDataPage] 数据轮询已暂停');
+    debugPrint('[RealtimeDataPage] 双速轮询已暂停');
   }
 
   /// 恢复轮询（Tab 切换回来时调用）
   void resumePolling() {
     _isPollingPaused = false;
     _startPolling();
-    _fetchRealtimeData(); // 立即获取一次
-    debugPrint('[RealtimeDataPage] 数据轮询已恢复');
+    _fetchArcData(); // 立即获取一次
+    _fetchSensorData();
+    debugPrint('[RealtimeDataPage] 双速轮询已恢复');
   }
 
-  /// 从后端获取实时数据
-  /// 如果获取失败，保持原有数据不刷新
-  Future<void> _fetchRealtimeData() async {
+  /// ============================================================
+  /// 弧流弧压数据获取 (0.2s 高频)
+  /// ============================================================
+  Future<void> _fetchArcData() async {
+    // 防止并发请求
+    if (_isArcFetching) return;
+    _isArcFetching = true;
+
     try {
-      // 1. 获取实时批量数据
-      final data = await _apiClient.getRealtimeBatch();
+      final data = await _apiClient.getRealtimeArc();
       if (data != null && mounted) {
         setState(() {
-          _realtimeData = RealtimeBatchData.fromJson(data);
-        
-        // 检查报警状态并播放声音
-        _checkAlarmStatus();
-        
-        });
-        debugPrint('[RealtimeDataPage] 实时数据刷新成功');
-      } else {
-        debugPrint('[RealtimeDataPage] 获取数据为空，保持原有数据');
-        // [BACKEND_BYPASS_MODE] 即使没有数据，也检查报警状态（使用现有数据）
-        if (mounted) {
-          _checkAlarmStatus();
-        }
-      }
+          _arcData = ArcRealtimeData.fromJson(data);
 
-      // 2. 获取蝶阀最新状态并增量计算开合度
-      await _fetchValveLatestStatus();
+          // 同步更新 _realtimeData 中的电流电压数据
+          _syncArcDataToRealtimeData();
+        });
+      }
     } catch (e) {
-      // 获取失败时不更新数据，保持原有状态
-      debugPrint('[RealtimeDataPage] 获取实时数据失败，保持原有数据: $e');
-      // [BACKEND_BYPASS_MODE] 即使获取失败，也检查报警状态（使用现有数据）
-      if (mounted) {
-        _checkAlarmStatus();
+      // 高频轮询，仅在调试时打印错误，不中断运行
+      // debugPrint('[RealtimeDataPage] 弧流弧压获取失败: $e');
+    } finally {
+      _isArcFetching = false;
+    }
+  }
+
+  /// 将弧流弧压数据同步到 _realtimeData（用于兼容现有 UI）
+  void _syncArcDataToRealtimeData() {
+    // 更新 electrodes 的电流电压
+    if (_realtimeData.electrodes.length >= 3) {
+      final phases = ['U', 'V', 'W'];
+      for (int i = 0; i < 3; i++) {
+        final oldElectrode = _realtimeData.electrodes[i];
+        _realtimeData.electrodes[i] = ElectrodeRealtimeData(
+          id: oldElectrode.id,
+          name: oldElectrode.name,
+          depthMm: oldElectrode.depthMm,
+          currentA: _arcData.arcCurrent[phases[i]] ?? oldElectrode.currentA,
+          voltageV: _arcData.arcVoltage[phases[i]] ?? oldElectrode.voltageV,
+        );
       }
     }
+
+    // 更新 electricity 的电流数组
+    _realtimeData = RealtimeBatchData(
+      electrodes: _realtimeData.electrodes,
+      electricity: ElectricityRealtimeData(
+        powerKW: _realtimeData.electricity.powerKW,
+        energyKWh: _realtimeData.electricity.energyKWh,
+        currentsA: [
+          _arcData.arcCurrent['U'] ?? 0.0,
+          _arcData.arcCurrent['V'] ?? 0.0,
+          _arcData.arcCurrent['W'] ?? 0.0,
+        ],
+      ),
+      cooling: _realtimeData.cooling,
+      hopper: _realtimeData.hopper,
+      batch: _realtimeData.batch,
+    );
+  }
+
+  /// ============================================================
+  /// 传感器数据获取 (0.5s 低频)
+  /// ============================================================
+  Future<void> _fetchSensorData() async {
+    // 防止并发请求
+    if (_isSensorFetching) return;
+    _isSensorFetching = true;
+
+    try {
+      final data = await _apiClient.getRealtimeSensor();
+      if (data != null && mounted) {
+        setState(() {
+          _sensorData = SensorRealtimeData.fromJson(data);
+
+          // 同步更新 _realtimeData 中的传感器数据
+          _syncSensorDataToRealtimeData();
+
+          // 检查报警状态并播放声音
+          _checkAlarmStatus();
+        });
+      }
+    } catch (e) {
+      // 低频轮询，打印错误日志
+      debugPrint('[RealtimeDataPage] 传感器数据获取失败: $e');
+    } finally {
+      _isSensorFetching = false;
+    }
+  }
+
+  /// 将传感器数据同步到 _realtimeData（用于兼容现有 UI）
+  void _syncSensorDataToRealtimeData() {
+    if (_sensorData == null) return;
+
+    // 更新 electrodes 的深度
+    if (_realtimeData.electrodes.length >= 3) {
+      for (int i = 0; i < 3; i++) {
+        final oldElectrode = _realtimeData.electrodes[i];
+        final depthKey = (i + 1).toString();
+        _realtimeData.electrodes[i] = ElectrodeRealtimeData(
+          id: oldElectrode.id,
+          name: oldElectrode.name,
+          depthMm:
+              _sensorData!.electrodeDepths[depthKey] ?? oldElectrode.depthMm,
+          currentA: oldElectrode.currentA,
+          voltageV: oldElectrode.voltageV,
+        );
+      }
+    }
+
+    // 更新冷却水和料仓数据
+    _realtimeData = RealtimeBatchData(
+      electrodes: _realtimeData.electrodes,
+      electricity: _realtimeData.electricity,
+      cooling: _sensorData!.cooling,
+      hopper: _sensorData!.hopper,
+      batch: _sensorData!.batch ?? _realtimeData.batch,
+    );
+
+    // 更新蝶阀开度
+    _valveOpenPercentages = Map.from(_sensorData!.valveOpenness);
   }
 
   /// 获取蝶阀最新状态并增量计算开合度
   ///
   /// 逻辑：
   /// - 每5秒获取一次最新状态
-  /// - "01"（开）→ 开合度 +16.67%
-  /// - "10"（关）→ 开合度 -16.67%
+  /// - 检查批次变化（新批次开度归零）
+  /// - "01"（开）→ 开合度 +增量（根据配置计算）
+  /// - "10"（关）→ 开合度 -增量（根据配置计算）
   /// - "00"（停）→ 开合度不变
   /// - 请求失败 → 记录失败次数，下次成功时补偿
   Future<void> _fetchValveLatestStatus() async {
@@ -219,6 +331,12 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
         setState(() {
           // 保存最新状态对象
           _latestValveStatus = latestStatus;
+
+          // 检查批次变化（新批次开度归零）
+          final currentBatch = _realtimeData.batch?.batchCode;
+          if (ValveCalculator.checkBatchAndReset(currentBatch)) {
+            debugPrint('[ValveStatus] 新批次检测到，开度已重置: $currentBatch');
+          }
 
           // 构建状态映射
           Map<int, String> statuses = {};
@@ -254,7 +372,11 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     setState(() => isRefreshing = true);
 
     try {
-      await _fetchRealtimeData();
+      // 同时获取弧流弧压和传感器数据
+      await Future.wait([
+        _fetchArcData(),
+        _fetchSensorData(),
+      ]);
       await _appState.refreshAllData();
 
       if (mounted) {
@@ -371,24 +493,48 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
 
     bool hasAlarm = false;
 
-    // 检查电极深度报警（低于150mm或高于1960mm）
+    // 深度下限和上限 (与 _ElectrodeWidget 保持一致)
+    const double depthMinThreshold = 150.0; // 下限 150mm
+    const double depthMaxThreshold = 1960.0; // 上限 1960mm
+
+    // 检查电极深度报警
+    // - 显示深度 <= 0 (即实时深度 <= 下限)
+    // - 实时深度 > 上限
     for (var electrode in _realtimeData.electrodes) {
-      if (electrode.depthMm < 150 || electrode.depthMm > 1960) {
+      final displayDepth = electrode.depthMm - depthMinThreshold;
+      if (displayDepth <= 0 || electrode.depthMm > depthMaxThreshold) {
         hasAlarm = true;
         break;
       }
     }
 
-    // 检查电极电流报警（±15%）
-    const double currentSetpoint = 2989.0;
-    const double currentMinThreshold = currentSetpoint * 0.85;
-    const double currentMaxThreshold = currentSetpoint * 1.15;
-    
-    for (var electrode in _realtimeData.electrodes) {
-      if (electrode.currentA < currentMinThreshold || 
-          electrode.currentA > currentMaxThreshold) {
-        hasAlarm = true;
-        break;
+    // ============================================================
+    // 检查电极电流报警（使用后端返回的设定值和死区）
+    // 报警条件: 弧流 < 设定值*(1-死区) 或 弧流 > 设定值*(1+死区)
+    // 注意: 弧压不需要报警
+    // 保护条件: 电流为0时不触发报警（设备未运行或数据未就绪）
+    // ============================================================
+    final deadzonePercent = _arcData.manualDeadzonePercent / 100.0; // 转换为小数
+    final phases = ['U', 'V', 'W'];
+
+    for (var phase in phases) {
+      final setpoint = _arcData.setpoints[phase] ?? 0.0;
+      final currentValue = _arcData.arcCurrent[phase] ?? 0.0;
+
+      // [CRITICAL] 电流为0时跳过报警（设备未运行或数据未就绪）
+      if (currentValue == 0.0) {
+        continue;
+      }
+
+      // 只有当设定值 > 0 时才检查报警
+      if (setpoint > 0) {
+        final minThreshold = setpoint * (1.0 - deadzonePercent);
+        final maxThreshold = setpoint * (1.0 + deadzonePercent);
+
+        if (currentValue < minThreshold || currentValue > maxThreshold) {
+          hasAlarm = true;
+          break;
+        }
       }
     }
 
@@ -397,8 +543,8 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
       hasAlarm = true;
     }
 
-    // 检查冷却水压报警（低于0.15）
-    if (_realtimeData.cooling.furnaceShell.pressureMPa < 0.15) {
+    // 检查冷却水压报警（低于150 kPa）
+    if (_realtimeData.cooling.furnaceShell.pressureKPa < 150.0) {
       hasAlarm = true;
     }
 
@@ -407,8 +553,8 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
       hasAlarm = true;
     }
 
-    // 检查炉盖冷却水压报警（低于0.15）
-    if (_realtimeData.cooling.furnaceCover.pressureMPa < 0.15) {
+    // 检查炉盖冷却水压报警（低于150 kPa）
+    if (_realtimeData.cooling.furnaceCover.pressureKPa < 150.0) {
       hasAlarm = true;
     }
 
@@ -421,7 +567,7 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
   }
 
   /// 开始冶炼
-  /// 
+  ///
   /// [BACKEND_BYPASS_MODE] 当前跳过后端调用，直接设置前端状态
   /// 恢复后端调用：搜索 "BACKEND_BYPASS_MODE" 并取消注释后端代码，删除直接状态设置代码
   Future<void> _startSmelting() async {
@@ -437,32 +583,49 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     // 用户取消
     if (batchConfig == null) return;
 
-    // 生成批次号: 炉号-年份月份-当月第XX炉 (例如: 1-202601-01)
-    final code = '${batchConfig.furnaceNumber}-${batchConfig.year}${batchConfig.month.toString().padLeft(2, '0')}-${batchConfig.batchNumber.toString().padLeft(2, '0')}';
+    // 生成批次号: FFYYMMDD 格式 (例如: 03260115 = 3号炉 + 2026年1月15日)
+    // FF: 炉号 (01-99)
+    // YY: 年份后两位 (26 = 2026)
+    // MM: 月份 (01-12)
+    // DD: 炉次/日期 (01-99)
+    final furnace = batchConfig.furnaceNumber.padLeft(2, '0');
+    final year = (batchConfig.year % 100).toString().padLeft(2, '0'); // 只取后两位
+    final month = batchConfig.month.toString().padLeft(2, '0');
+    final batch = batchConfig.batchNumber.toString().padLeft(2, '0');
+    final code = '$furnace$year$month$batch';
 
     setState(() => isRefreshing = true); // 显示加载状态
 
-    // ============ [BACKEND_BYPASS_START] 跳过后端，直接设置状态 ============
     try {
-      // 模拟短暂延迟
-      await Future.delayed(const Duration(milliseconds: 300));
-      
+      // 调用后端 API 开始冶炼
+      final response = await BatchApi.startSmelting(code);
+
       if (mounted) {
-        setState(() {
-          _appState.isSmelting = true;
-          _appState.smeltingCode = code;
-          isRefreshing = false;
-        });
-        _appState.notifyListeners();
+        if (response.success) {
+          setState(() {
+            _appState.isSmelting = true;
+            _appState.smeltingCode = response.batchCode ?? code;
+            isRefreshing = false;
+          });
+          _appState.notifyListeners();
 
-        _showOperationResult(
-          success: true,
-          message: '开始冶炼成功（前端模式）',
-        );
+          _showOperationResult(
+            success: true,
+            message: '开始冶炼成功，批次号: ${response.batchCode ?? code}',
+          );
 
-        // 尝试立即刷新一次数据
-        Future.delayed(
-            const Duration(milliseconds: 1000), () => _fetchRealtimeData());
+          // 尝试立即刷新一次数据
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            _fetchArcData();
+            _fetchSensorData();
+          });
+        } else {
+          setState(() => isRefreshing = false);
+          _showOperationResult(
+            success: false,
+            message: response.message,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -473,42 +636,6 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
         );
       }
     }
-    // ============ [BACKEND_BYPASS_END] ============
-
-    /* ============ [BACKEND_ORIGINAL_START] 原后端调用代码（已注释） ============
-    try {
-      // 调用后端 API 启动轮询
-      final response = await ControlApi.startPolling(code);
-
-      if (mounted) {
-        setState(() {
-          _appState.isSmelting = true;
-          // 使用后端确认的批次号，或者我们生成的
-          _appState.smeltingCode =
-              response.batchCode.isNotEmpty ? response.batchCode : code;
-          isRefreshing = false;
-        });
-        _appState.notifyListeners();
-
-        _showOperationResult(
-          success: true,
-          message: '开始冶炼成功，设备连接中...',
-        );
-
-        // 尝试立即刷新一次数据，以检查连接状态
-        Future.delayed(
-            const Duration(milliseconds: 1000), () => _fetchRealtimeData());
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => isRefreshing = false);
-        _showOperationResult(
-          success: false,
-          message: '启动失败: $e',
-        );
-      }
-    }
-    ============ [BACKEND_ORIGINAL_END] ============ */
   }
 
   /// 停止冶炼
@@ -516,19 +643,20 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     setState(() => isRefreshing = true);
 
     try {
-      // 调用后端 API 停止轮询
-      await ControlApi.stopPolling();
+      // 调用后端 API 停止冶炼
+      final response = await BatchApi.stopSmelting();
 
       if (mounted) {
         setState(() {
           _appState.isSmelting = false;
+          _appState.smeltingCode = '';
           isRefreshing = false;
         });
         _appState.notifyListeners();
 
         _showOperationResult(
-          success: true,
-          message: '冶炼已停止，轮次结束',
+          success: response.success,
+          message: response.success ? '冶炼已停止，轮次结束' : response.message,
         );
       }
     } catch (e) {
@@ -541,6 +669,114 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           message: '停止失败: $e',
         );
       }
+    }
+  }
+
+  /// 暂停冶炼
+  Future<void> _pauseSmelting() async {
+    setState(() => isRefreshing = true);
+
+    try {
+      final response = await BatchApi.pauseSmelting();
+
+      if (mounted) {
+        setState(() => isRefreshing = false);
+
+        if (response.success) {
+          // 暂停时保留批次号，但标记为非运行状态
+          _showOperationResult(
+            success: true,
+            message: '冶炼已暂停，批次号已保留',
+          );
+        } else {
+          _showOperationResult(
+            success: false,
+            message: response.message,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isRefreshing = false);
+        _showOperationResult(
+          success: false,
+          message: '暂停失败: $e',
+        );
+      }
+    }
+  }
+
+  /// 恢复冶炼
+  Future<void> _resumeSmelting() async {
+    setState(() => isRefreshing = true);
+
+    try {
+      final response = await BatchApi.resumeSmelting();
+
+      if (mounted) {
+        setState(() => isRefreshing = false);
+
+        if (response.success) {
+          _showOperationResult(
+            success: true,
+            message: '冶炼已恢复',
+          );
+        } else {
+          _showOperationResult(
+            success: false,
+            message: response.message,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isRefreshing = false);
+        _showOperationResult(
+          success: false,
+          message: '恢复失败: $e',
+        );
+      }
+    }
+  }
+
+  /// 检查断电恢复 (应用启动时调用)
+  Future<void> _checkPowerRecovery() async {
+    try {
+      final status = await BatchApi.getStatus();
+
+      if (status.needsRecovery && mounted) {
+        // 显示恢复对话框
+        final shouldRecover = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => _PowerRecoveryDialog(
+            batchCode: status.batchCode ?? '',
+            elapsedTime: status.formattedElapsedTime,
+          ),
+        );
+
+        if (shouldRecover == true) {
+          // 恢复冶炼
+          await _resumeSmelting();
+          setState(() {
+            _appState.isSmelting = true;
+            _appState.smeltingCode = status.batchCode ?? '';
+          });
+          _appState.notifyListeners();
+        } else {
+          // 放弃批次
+          await _stopSmelting();
+        }
+      } else if (status.isRunning && mounted) {
+        // 后端正在运行但前端不知道（可能是前端重启）
+        setState(() {
+          _appState.isSmelting = true;
+          _appState.smeltingCode = status.batchCode ?? '';
+        });
+        _appState.notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[RealtimeDataPage] 检查断电恢复失败: $e');
     }
   }
 
@@ -907,8 +1143,6 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                     child: _ElectrodeWidget(
                         label: '1#电极',
                         isSmelting: _appState.isSmelting,
-                        depth: _realtimeData.electrodes[0].depthMm
-                            .toStringAsFixed(0),
                         depthValue: _realtimeData.electrodes[0].depthMm,
                         current: _realtimeData.electrodes[0].currentA
                             .toStringAsFixed(0),
@@ -923,8 +1157,6 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                     child: _ElectrodeWidget(
                         label: '2#电极',
                         isSmelting: _appState.isSmelting,
-                        depth: _realtimeData.electrodes[1].depthMm
-                            .toStringAsFixed(0),
                         depthValue: _realtimeData.electrodes[1].depthMm,
                         current: _realtimeData.electrodes[1].currentA
                             .toStringAsFixed(0),
@@ -939,8 +1171,6 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                     child: _ElectrodeWidget(
                         isSmelting: _appState.isSmelting,
                         label: '3#电极',
-                        depth: _realtimeData.electrodes[2].depthMm
-                            .toStringAsFixed(0),
                         depthValue: _realtimeData.electrodes[2].depthMm,
                         current: _realtimeData.electrodes[2].currentA
                             .toStringAsFixed(0),
@@ -1033,9 +1263,8 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                   DataItem(
                       icon: Icons.compress,
                       label: '进出口压差',
-                      value:
-                          (_realtimeData.cooling.filterPressureDiffMPa * 1000)
-                              .toStringAsFixed(1), // MPa -> kPa (更直观)
+                      value: _realtimeData.cooling.filterPressureDiffKPa
+                          .toStringAsFixed(1),
                       unit: 'kPa',
                       iconColor: TechColors.glowBlue),
                 ],
@@ -1053,21 +1282,22 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
               accentColor: TechColors.glowOrange,
               padding: const EdgeInsets.all(8),
               child: ElectrodeCurrentChart(
+                deadzonePercent: _arcData.manualDeadzonePercent, // 从API获取死区百分比
                 electrodes: [
                   ElectrodeData(
                     name: '电极1',
-                    setValue: 5978, // 弧流目标值 5978 A
-                    actualValue: _realtimeData.electrodes[0].currentA,
+                    setValue: _arcData.setpoints['U'] ?? 0.0, // 从API获取U相设定值
+                    actualValue: _arcData.arcCurrent['U'] ?? 0.0, // 从API获取U相弧流
                   ),
                   ElectrodeData(
                     name: '电极2',
-                    setValue: 5978, // 弧流目标值 5978 A
-                    actualValue: _realtimeData.electrodes[1].currentA,
+                    setValue: _arcData.setpoints['V'] ?? 0.0, // 从API获取V相设定值
+                    actualValue: _arcData.arcCurrent['V'] ?? 0.0, // 从API获取V相弧流
                   ),
                   ElectrodeData(
                     name: '电极3',
-                    setValue: 5978, // 弧流目标值 5978 A
-                    actualValue: _realtimeData.electrodes[2].currentA,
+                    setValue: _arcData.setpoints['W'] ?? 0.0, // 从API获取W相设定值
+                    actualValue: _arcData.arcCurrent['W'] ?? 0.0, // 从API获取W相弧流
                   ),
                 ],
               ),
@@ -1091,16 +1321,16 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                           .toStringAsFixed(2),
                       unit: 'm³/h',
                       iconColor: TechColors.glowOrange,
-                      threshold: 2.0,
+                      threshold: _appState.furnaceShellFlowMin,
                       isAboveThreshold: false),
                   DataItem(
                       icon: Icons.opacity,
                       label: '冷却水水压',
-                      value: _realtimeData.cooling.furnaceShell.pressureMPa
-                          .toStringAsFixed(2),
-                      unit: 'MPa',
+                      value: _realtimeData.cooling.furnaceShell.pressureKPa
+                          .toStringAsFixed(1),
+                      unit: 'kPa',
                       iconColor: TechColors.glowBlue,
-                      threshold: 0.15,
+                      threshold: _appState.furnaceShellPressureMin,
                       isAboveThreshold: false),
                   DataItem(
                       icon: Icons.water_drop,
@@ -1131,16 +1361,16 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
                           .toStringAsFixed(2),
                       unit: 'm³/h',
                       iconColor: TechColors.glowOrange,
-                      threshold: 2.0,
+                      threshold: _appState.furnaceCoverFlowMin,
                       isAboveThreshold: false),
                   DataItem(
                       icon: Icons.opacity,
                       label: '冷却水水压',
-                      value: _realtimeData.cooling.furnaceCover.pressureMPa
-                          .toStringAsFixed(2),
-                      unit: 'MPa',
+                      value: _realtimeData.cooling.furnaceCover.pressureKPa
+                          .toStringAsFixed(1),
+                      unit: 'kPa',
                       iconColor: TechColors.glowBlue,
-                      threshold: 0.15,
+                      threshold: _appState.furnaceCoverPressureMin,
                       isAboveThreshold: false),
                   DataItem(
                       icon: Icons.water_drop,
@@ -1256,16 +1486,16 @@ class FurnacePowerCard extends StatelessWidget {
 }
 
 /// 电极数据小部件（显示深度、电流和电压）
-/// 深度报警: 低于低点(150mm) 或 高于高点(1960mm) 都报警
+/// 深度显示: 实时深度 - 下限 (显示相对深度)
+/// 深度报警: 显示深度 <= 0 (实时 <= 下限) 或 实时深度 > 上限
 class _ElectrodeWidget extends StatelessWidget {
   final String label;
-  final String depth;
   final String current;
   final String voltage;
-  final double depthValue; // 深度数值，用于报警判断
+  final double depthValue; // 实时深度数值 (mm)
   final double currentValue; // 电流数值，用于报警判断
-  final double depthMinThreshold; // 深度低位阈值 (mm)
-  final double depthMaxThreshold; // 深度高位阈值 (mm)
+  final double depthMinThreshold; // 深度下限 (mm) - 显示用: 显示值 = 实时值 - 下限
+  final double depthMaxThreshold; // 深度上限 (mm) - 超过此值报警
   final bool isSmelting; // 是否正在冶炼
 
   // 电流设定值 2989A，阈值为 ±15%
@@ -1275,20 +1505,26 @@ class _ElectrodeWidget extends StatelessWidget {
 
   const _ElectrodeWidget({
     required this.label,
-    required this.depth,
     required this.current,
     required this.voltage,
     this.depthValue = 0,
     this.currentValue = 0,
-    this.depthMinThreshold = 150, // 默认低位阈值 0.15m = 150mm
-    this.depthMaxThreshold = 1960, // 默认高位阈值 1.96m = 1960mm
+    this.depthMinThreshold = 150, // 默认下限 150mm
+    this.depthMaxThreshold = 1960, // 默认上限 1960mm
     this.isSmelting = false,
   });
 
-  /// 判断深度是否报警（低于低点或高于高点）
+  /// 计算显示深度 = 实时深度 - 下限
+  double get displayDepth => depthValue - depthMinThreshold;
+
+  /// 显示深度字符串 (保留整数)
+  String get depthDisplay => displayDepth.toStringAsFixed(0);
+
+  /// 判断深度是否报警
+  /// - 显示深度 <= 0 (即实时深度 <= 下限)
+  /// - 实时深度 > 上限
   bool get isDepthAlarm =>
-      isSmelting &&
-      (depthValue < depthMinThreshold || depthValue > depthMaxThreshold);
+      isSmelting && (displayDepth <= 0 || depthValue > depthMaxThreshold);
 
   /// 判断电流是否报警 (超出 ±15% 范围)
   bool get isCurrentAlarm =>
@@ -1298,7 +1534,7 @@ class _ElectrodeWidget extends StatelessWidget {
 
   /// 获取报警类型描述
   String get alarmType {
-    if (depthValue < depthMinThreshold) return '低位';
+    if (displayDepth <= 0) return '低位';
     if (depthValue > depthMaxThreshold) return '高位';
     if (currentValue < currentMinThreshold) return '电流过低';
     if (currentValue > currentMaxThreshold) return '电流过高';
@@ -1375,7 +1611,7 @@ class _ElectrodeWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          // 第二行：深度数据
+          // 第二行：深度数据 (显示值 = 实时值 - 下限)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1387,7 +1623,7 @@ class _ElectrodeWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                (depthValue / 1000).toStringAsFixed(3),
+                (displayDepth / 1000).toStringAsFixed(3),
                 style: TextStyle(
                   color: depthColor,
                   fontSize: 20,
@@ -1501,7 +1737,8 @@ class FeedingStatisticsDialog extends StatefulWidget {
   });
 
   @override
-  State<FeedingStatisticsDialog> createState() => _FeedingStatisticsDialogState();
+  State<FeedingStatisticsDialog> createState() =>
+      _FeedingStatisticsDialogState();
 }
 
 /// 批次配置数据类
@@ -1537,8 +1774,10 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
   late int _selectedMonth;
   late int _selectedBatchNumber;
   bool _isLoading = false;
+  bool _isLoadingSequence = true; // 正在加载序号
   late TextEditingController _batchNumberController;
   String? _batchNumberError;
+  int _latestSequence = 0; // 数据库中最新序号
 
   @override
   void initState() {
@@ -1546,8 +1785,45 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
     final now = DateTime.now();
     _selectedYear = now.year;
     _selectedMonth = now.month;
-    _selectedBatchNumber = 1; // 默认从1开始，后续可以从后端获取当月最大值+1
+    _selectedBatchNumber = 1;
     _batchNumberController = TextEditingController(text: '1');
+
+    // 自动获取最新序号
+    _fetchLatestSequence();
+  }
+
+  /// 从后端获取最新批次序号
+  Future<void> _fetchLatestSequence() async {
+    setState(() => _isLoadingSequence = true);
+
+    try {
+      final response = await BatchApi.getLatestSequence(
+        furnaceNumber: widget.furnaceNumber,
+        year: _selectedYear,
+        month: _selectedMonth,
+      );
+
+      if (mounted) {
+        setState(() {
+          _latestSequence = response.latestSequence;
+          _selectedBatchNumber = response.nextSequence;
+          _batchNumberController.text = response.nextSequence.toString();
+          _isLoadingSequence = false;
+        });
+
+        debugPrint(
+            '[BatchConfigDialog] 最新序号: $_latestSequence, 建议序号: ${response.nextSequence}');
+      }
+    } catch (e) {
+      debugPrint('[BatchConfigDialog] 获取最新序号失败: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingSequence = false;
+          // 失败时使用默认值 1
+          _batchNumberController.text = '1';
+        });
+      }
+    }
   }
 
   @override
@@ -1637,7 +1913,9 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         child: const Text(
                           '取消',
                           style: TextStyle(
@@ -1652,7 +1930,8 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: TechColors.glowCyan.withOpacity(0.2),
                           foregroundColor: TechColors.glowCyan,
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                             side: BorderSide(color: TechColors.glowCyan),
@@ -1721,7 +2000,8 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
 
   Widget _buildYearSelector() {
     final currentYear = DateTime.now().year;
-    final years = List.generate(5, (index) => currentYear - 2 + index); // 前2年到后2年
+    final years =
+        List.generate(5, (index) => currentYear - 2 + index); // 前2年到后2年
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1750,10 +2030,13 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
                 color: TechColors.textPrimary,
                 fontSize: 20,
               ),
-              icon: const Icon(Icons.arrow_drop_down, color: TechColors.glowCyan),
+              icon:
+                  const Icon(Icons.arrow_drop_down, color: TechColors.glowCyan),
               onChanged: (value) {
-                if (value != null) {
+                if (value != null && value != _selectedYear) {
                   setState(() => _selectedYear = value);
+                  // 年份变化时重新获取序号
+                  _fetchLatestSequence();
                 }
               },
               items: years.map((year) {
@@ -1797,10 +2080,13 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
                 color: TechColors.textPrimary,
                 fontSize: 20,
               ),
-              icon: const Icon(Icons.arrow_drop_down, color: TechColors.glowCyan),
+              icon:
+                  const Icon(Icons.arrow_drop_down, color: TechColors.glowCyan),
               onChanged: (value) {
-                if (value != null) {
+                if (value != null && value != _selectedMonth) {
                   setState(() => _selectedMonth = value);
+                  // 月份变化时重新获取序号
+                  _fetchLatestSequence();
                 }
               },
               items: List.generate(12, (index) {
@@ -1821,12 +2107,36 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '当月炉次',
-          style: TextStyle(
-            color: TechColors.textSecondary,
-            fontSize: 18,
-          ),
+        Row(
+          children: [
+            const Text(
+              '当月炉次',
+              style: TextStyle(
+                color: TechColors.textSecondary,
+                fontSize: 18,
+              ),
+            ),
+            if (_isLoadingSequence) ...[
+              const SizedBox(width: 8),
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: TechColors.glowCyan,
+                ),
+              ),
+            ] else if (_latestSequence > 0) ...[
+              const SizedBox(width: 8),
+              Text(
+                '(上次: $_latestSequence)',
+                style: TextStyle(
+                  color: TechColors.glowGreen.withOpacity(0.8),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 8),
         TextField(
@@ -1861,7 +2171,8 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
               borderRadius: BorderRadius.circular(6),
               borderSide: BorderSide(color: TechColors.statusAlarm),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           onChanged: (value) {
             setState(() {
@@ -1890,7 +2201,7 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
   void _onConfirm() {
     final batchNumberText = _batchNumberController.text.trim();
     final error = _validateBatchNumber(batchNumberText);
-    
+
     if (error != null) {
       setState(() {
         _batchNumberError = error;
@@ -1932,7 +2243,8 @@ class _FeedingStatisticsDialogState extends State<FeedingStatisticsDialog> {
     final List<ChartDataPoint> points = List.generate(12, (i) {
       final time = now.subtract(Duration(minutes: (11 - i) * 5));
       return ChartDataPoint(
-        label: "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}",
+        label:
+            "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}",
         value: 1000 + i * 120 + (i % 3 == 0 ? 80 : 0),
       );
     });
@@ -2152,6 +2464,189 @@ class _FeedingStatisticsDialogState extends State<FeedingStatisticsDialog> {
               showPoints: true,
               minY: 0,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 断电恢复对话框
+/// 当检测到后端有未完成的冶炼批次时显示
+class _PowerRecoveryDialog extends StatelessWidget {
+  final String batchCode;
+  final String elapsedTime;
+
+  const _PowerRecoveryDialog({
+    required this.batchCode,
+    required this.elapsedTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 500,
+        decoration: BoxDecoration(
+          color: TechColors.bgDeep,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: TechColors.statusWarning.withOpacity(0.7),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: TechColors.statusWarning.withOpacity(0.3),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 标题栏
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: TechColors.statusWarning.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: TechColors.statusWarning.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.power_settings_new,
+                    color: TechColors.statusWarning,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      '检测到未完成的冶炼批次',
+                      style: TextStyle(
+                        color: TechColors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // 内容区域
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 批次信息
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: TechColors.bgMedium.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: TechColors.borderDark),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildInfoRow('批次编号', batchCode),
+                        const SizedBox(height: 12),
+                        _buildInfoRow('已运行时长', elapsedTime),
+                        const SizedBox(height: 12),
+                        _buildInfoRow('当前状态', '已暂停（断电保护）'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // 提示文字
+                  const Text(
+                    '系统检测到上次冶炼因断电而中断，请选择：',
+                    style: TextStyle(
+                      color: TechColors.textSecondary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // 按钮组
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: TechColors.statusAlarm,
+                            side: BorderSide(color: TechColors.statusAlarm),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            '放弃批次',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                TechColors.statusNormal.withOpacity(0.2),
+                            foregroundColor: TechColors.statusNormal,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: TechColors.statusNormal),
+                            ),
+                          ),
+                          child: const Text(
+                            '恢复冶炼',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: TechColors.textSecondary,
+            fontSize: 16,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: TechColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

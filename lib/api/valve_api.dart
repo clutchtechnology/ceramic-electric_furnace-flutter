@@ -151,8 +151,278 @@ class ValveApi {
     }
   }
 
+  // ============================================================
+  // 蝶阀配置 API
+  // ============================================================
+
+  /// 获取蝶阀配置（全开/全关时间）
+  ///
+  /// Returns:
+  ///   Map<String, ValveConfig> 包含4个蝶阀的配置
+  Future<Map<String, ValveConfig>> getValveConfig() async {
+    try {
+      final response = await _client
+          .get(Uri.parse('${Api.baseUrl}/api/valve/config'))
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        _onSuccess();
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final configData = data['data'] as Map<String, dynamic>;
+        return configData.map((key, value) =>
+            MapEntry(key, ValveConfig.fromJson(value as Map<String, dynamic>)));
+      } else {
+        _onFailure();
+        throw Exception('获取蝶阀配置失败: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      _onFailure();
+      throw Exception('获取蝶阀配置超时');
+    } on SocketException catch (e) {
+      _onFailure();
+      throw Exception('网络连接错误: $e');
+    } catch (e) {
+      _onFailure();
+      throw Exception('获取蝶阀配置失败: $e');
+    }
+  }
+
+  /// 更新单个蝶阀配置
+  ///
+  /// Args:
+  ///   valveId: 蝶阀编号 (1-4)
+  ///   fullOpenTime: 全开时间(秒)
+  ///   fullCloseTime: 全关时间(秒)
+  Future<bool> updateValveConfig(
+      int valveId, double? fullOpenTime, double? fullCloseTime) async {
+    try {
+      final body = <String, dynamic>{};
+      if (fullOpenTime != null) body['full_open_time'] = fullOpenTime;
+      if (fullCloseTime != null) body['full_close_time'] = fullCloseTime;
+
+      final response = await _client
+          .put(
+            Uri.parse('${Api.baseUrl}/api/valve/config/$valveId'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(body),
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        _onSuccess();
+        return true;
+      } else {
+        _onFailure();
+        throw Exception('更新蝶阀配置失败: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      _onFailure();
+      throw Exception('更新蝶阀配置超时');
+    } on SocketException catch (e) {
+      _onFailure();
+      throw Exception('网络连接错误: $e');
+    } catch (e) {
+      _onFailure();
+      throw Exception('更新蝶阀配置失败: $e');
+    }
+  }
+
+  /// 批量更新蝶阀配置
+  ///
+  /// Args:
+  ///   configs: Map<int, ValveConfig> 蝶阀编号 -> 配置
+  Future<bool> updateAllValveConfig(Map<int, ValveConfig> configs) async {
+    try {
+      final body = <String, dynamic>{};
+      configs.forEach((valveId, config) {
+        body['valve_$valveId'] = {
+          'full_open_time': config.fullOpenTime,
+          'full_close_time': config.fullCloseTime,
+        };
+      });
+
+      final response = await _client
+          .put(
+            Uri.parse('${Api.baseUrl}/api/valve/config'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(body),
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        _onSuccess();
+        return true;
+      } else {
+        _onFailure();
+        throw Exception('批量更新蝶阀配置失败: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      _onFailure();
+      throw Exception('批量更新蝶阀配置超时');
+    } on SocketException catch (e) {
+      _onFailure();
+      throw Exception('网络连接错误: $e');
+    } catch (e) {
+      _onFailure();
+      throw Exception('批量更新蝶阀配置失败: $e');
+    }
+  }
+
+  // ============================================================
+  // 蝶阀开度 API
+  // ============================================================
+
+  /// 获取所有蝶阀开度
+  ///
+  /// Returns:
+  ///   Map<String, ValveOpenness> 包含4个蝶阀的开度
+  Future<Map<String, ValveOpenness>> getValveOpenness() async {
+    try {
+      final response = await _client
+          .get(Uri.parse('${Api.baseUrl}/api/valve/openness'))
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        _onSuccess();
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final opennessData = data['data'] as Map<String, dynamic>;
+        return opennessData.map((key, value) => MapEntry(
+            key, ValveOpenness.fromJson(value as Map<String, dynamic>)));
+      } else {
+        _onFailure();
+        throw Exception('获取蝶阀开度失败: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      _onFailure();
+      throw Exception('获取蝶阀开度超时');
+    } on SocketException catch (e) {
+      _onFailure();
+      throw Exception('网络连接错误: $e');
+    } catch (e) {
+      _onFailure();
+      throw Exception('获取蝶阀开度失败: $e');
+    }
+  }
+
+  /// 重置蝶阀开度
+  ///
+  /// Args:
+  ///   valveId: 蝶阀编号 (1-4), null=全部重置
+  ///   batchCode: 新批次号
+  Future<bool> resetValveOpenness({int? valveId, String? batchCode}) async {
+    try {
+      final body = <String, dynamic>{};
+      if (valveId != null) body['valve_id'] = valveId;
+      if (batchCode != null) body['batch_code'] = batchCode;
+
+      final response = await _client
+          .post(
+            Uri.parse('${Api.baseUrl}/api/valve/openness/reset'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(body),
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        _onSuccess();
+        return true;
+      } else {
+        _onFailure();
+        throw Exception('重置蝶阀开度失败: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      _onFailure();
+      throw Exception('重置蝶阀开度超时');
+    } on SocketException catch (e) {
+      _onFailure();
+      throw Exception('网络连接错误: $e');
+    } catch (e) {
+      _onFailure();
+      throw Exception('重置蝶阀开度失败: $e');
+    }
+  }
+
   /// 释放资源
   void dispose() {
     _httpClient.close();
+  }
+}
+
+// ============================================================
+// 数据模型
+// ============================================================
+
+/// 蝶阀配置
+class ValveConfig {
+  final int valveId;
+  final double fullOpenTime;
+  final double fullCloseTime;
+  final String? updatedAt;
+
+  ValveConfig({
+    required this.valveId,
+    required this.fullOpenTime,
+    required this.fullCloseTime,
+    this.updatedAt,
+  });
+
+  factory ValveConfig.fromJson(Map<String, dynamic> json) {
+    return ValveConfig(
+      valveId: json['valve_id'] as int? ?? 0,
+      fullOpenTime: (json['full_open_time'] as num?)?.toDouble() ?? 30.0,
+      fullCloseTime: (json['full_close_time'] as num?)?.toDouble() ?? 30.0,
+      updatedAt: json['updated_at'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'valve_id': valveId,
+        'full_open_time': fullOpenTime,
+        'full_close_time': fullCloseTime,
+        'updated_at': updatedAt,
+      };
+
+  ValveConfig copyWith({
+    int? valveId,
+    double? fullOpenTime,
+    double? fullCloseTime,
+    String? updatedAt,
+  }) {
+    return ValveConfig(
+      valveId: valveId ?? this.valveId,
+      fullOpenTime: fullOpenTime ?? this.fullOpenTime,
+      fullCloseTime: fullCloseTime ?? this.fullCloseTime,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+/// 蝶阀开度
+class ValveOpenness {
+  final int valveId;
+  final double opennessPercent;
+  final String currentStatus;
+  final String? lastCalibration;
+  final String? calibrationTime;
+  final String? batchCode;
+
+  ValveOpenness({
+    required this.valveId,
+    required this.opennessPercent,
+    required this.currentStatus,
+    this.lastCalibration,
+    this.calibrationTime,
+    this.batchCode,
+  });
+
+  factory ValveOpenness.fromJson(Map<String, dynamic> json) {
+    return ValveOpenness(
+      valveId: json['valve_id'] as int? ?? 0,
+      opennessPercent: (json['openness_percent'] as num?)?.toDouble() ?? 0.0,
+      currentStatus: json['current_status'] as String? ?? '00',
+      lastCalibration: json['last_calibration'] as String?,
+      calibrationTime: json['calibration_time'] as String?,
+      batchCode: json['batch_code'] as String?,
+    );
   }
 }

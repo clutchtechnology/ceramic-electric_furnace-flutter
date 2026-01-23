@@ -105,11 +105,13 @@ class ControlApi {
   static Future<StartPollingResponse> startPolling(String batchCode) async {
     try {
       final request = StartPollingRequest(batchCode: batchCode);
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/control/start'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(request.toJson()),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/control/start'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -146,9 +148,11 @@ class ControlApi {
   /// 查询轮询状态
   static Future<PollingStatusResponse> getStatus() async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/control/status'),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.baseUrl}/control/status'),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -161,16 +165,21 @@ class ControlApi {
     }
   }
 
-  /// 生成批次号 (格式: SM + YYYYMMDD + 序号)
-  static String generateBatchCode() {
+  /// 生成批次号 (格式: FF + YY + MM + DD，无分隔符)
+  ///
+  /// - FF: 炉号 (01-99)
+  /// - YY: 年份后两位 (26 = 2026)
+  /// - MM: 月份 (01-12)
+  /// - DD: 日期 (01-31)
+  ///
+  /// 示例: 03260123 = 3号炉 + 2026年1月23日
+  static String generateBatchCode({int furnaceNumber = 3}) {
     final now = DateTime.now();
-    final dateStr =
-        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final furnace = furnaceNumber.toString().padLeft(2, '0');
+    final year = (now.year % 100).toString().padLeft(2, '0'); // 只取后两位
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
 
-    // 使用时间戳的后3位作为序号 (避免冲突)
-    final timestamp = now.millisecondsSinceEpoch;
-    final sequence = (timestamp % 1000).toString().padLeft(3, '0');
-
-    return 'SM$dateStr$sequence';
+    return '$furnace$year$month$day';
   }
 }

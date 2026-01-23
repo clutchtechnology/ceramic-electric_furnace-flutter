@@ -85,6 +85,20 @@ class AppState extends ChangeNotifier {
   // 系统配置页面状态
   int systemConfigTabIndex = 0;
 
+  // ============ 报警阈值配置 ============
+  // 炉盖冷却水流速阈值 (m³/h)
+  double furnaceCoverFlowMin = 0.0;
+  double furnaceCoverFlowMax = 10.0;
+  // 炉盖冷却水水压阈值 (kPa)
+  double furnaceCoverPressureMin = 0.0;
+  double furnaceCoverPressureMax = 1000.0;
+  // 炉皮冷却水流速阈值 (m³/h)
+  double furnaceShellFlowMin = 0.0;
+  double furnaceShellFlowMax = 10.0;
+  // 炉皮冷却水水压阈值 (kPa)
+  double furnaceShellPressureMin = 0.0;
+  double furnaceShellPressureMax = 1000.0;
+
   /// 初始化状态管理
   static Future<void> initialize() async {
     if (_instance != null) return;
@@ -281,6 +295,16 @@ class AppState extends ChangeNotifier {
 
       // 加载系统配置页面状态
       systemConfigTabIndex = _prefs.getInt('systemConfigTabIndex') ?? 0;
+
+      // 加载报警阈值配置
+      furnaceCoverFlowMin = _prefs.getDouble('furnaceCoverFlowMin') ?? 0.0;
+      furnaceCoverFlowMax = _prefs.getDouble('furnaceCoverFlowMax') ?? 10.0;
+      furnaceCoverPressureMin = _prefs.getDouble('furnaceCoverPressureMin') ?? 0.0;
+      furnaceCoverPressureMax = _prefs.getDouble('furnaceCoverPressureMax') ?? 1000.0;
+      furnaceShellFlowMin = _prefs.getDouble('furnaceShellFlowMin') ?? 0.0;
+      furnaceShellFlowMax = _prefs.getDouble('furnaceShellFlowMax') ?? 10.0;
+      furnaceShellPressureMin = _prefs.getDouble('furnaceShellPressureMin') ?? 0.0;
+      furnaceShellPressureMax = _prefs.getDouble('furnaceShellPressureMax') ?? 1000.0;
     } catch (e) {
       debugPrint('加载状态失败: $e');
     }
@@ -387,6 +411,19 @@ class AppState extends ChangeNotifier {
   /// 保存系统配置页面状态
   Future<void> saveSystemConfigState() async {
     await _prefs.setInt('systemConfigTabIndex', systemConfigTabIndex);
+    notifyListeners();
+  }
+
+  /// 保存报警阈值配置
+  Future<void> saveAlarmThresholds() async {
+    await _prefs.setDouble('furnaceCoverFlowMin', furnaceCoverFlowMin);
+    await _prefs.setDouble('furnaceCoverFlowMax', furnaceCoverFlowMax);
+    await _prefs.setDouble('furnaceCoverPressureMin', furnaceCoverPressureMin);
+    await _prefs.setDouble('furnaceCoverPressureMax', furnaceCoverPressureMax);
+    await _prefs.setDouble('furnaceShellFlowMin', furnaceShellFlowMin);
+    await _prefs.setDouble('furnaceShellFlowMax', furnaceShellFlowMax);
+    await _prefs.setDouble('furnaceShellPressureMin', furnaceShellPressureMin);
+    await _prefs.setDouble('furnaceShellPressureMax', furnaceShellPressureMax);
     notifyListeners();
   }
 
