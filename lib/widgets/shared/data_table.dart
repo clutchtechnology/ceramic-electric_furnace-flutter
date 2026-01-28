@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 科技风格数据表格组件
 class TechDataTable extends StatefulWidget {
@@ -11,7 +12,7 @@ class TechDataTable extends StatefulWidget {
     super.key,
     required this.columns,
     required this.data,
-    this.accentColor = TechColors.glowCyan,
+    this.accentColor = const Color(0xFF00d4ff),
   });
 
   @override
@@ -31,7 +32,7 @@ class _TechDataTableState extends State<TechDataTable> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: TechColors.bgDark.withOpacity(0.3),
+        color: AppTheme.bgDark(context).withOpacity(0.3),
         border: Border.all(
           color: widget.accentColor.withOpacity(0.2),
           width: 1,
@@ -101,7 +102,7 @@ class _TechDataTableState extends State<TechDataTable> {
     return Container(
       decoration: BoxDecoration(
         color: index.isEven
-            ? TechColors.bgDark.withOpacity(0.1)
+            ? AppTheme.bgDark(context).withOpacity(0.1)
             : Colors.transparent,
         border: Border(
           bottom: BorderSide(
@@ -117,7 +118,7 @@ class _TechDataTableState extends State<TechDataTable> {
             child: Text(
               cellData,
               style: TextStyle(
-                color: TechColors.textSecondary,
+                color: AppTheme.textSecondary(context),
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,
@@ -137,13 +138,13 @@ class _TechDataTableState extends State<TechDataTable> {
           Icon(
             Icons.inbox_outlined,
             size: 48,
-            color: TechColors.textMuted.withOpacity(0.3),
+            color: AppTheme.textMuted(context).withOpacity(0.3),
           ),
           const SizedBox(height: 12),
           Text(
             '暂无数据',
             style: TextStyle(
-              color: TechColors.textMuted,
+              color: AppTheme.textMuted(context),
               fontSize: 17,
             ),
           ),

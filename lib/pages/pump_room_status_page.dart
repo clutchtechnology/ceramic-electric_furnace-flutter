@@ -3,6 +3,7 @@ import 'dart:async';
 import '../models/pump_data.dart';
 import '../widgets/common/tech_line_widgets.dart';
 import '../widgets/shared/custom_card_widget.dart';
+import '../theme/app_theme.dart';
 
 /// ============================================================================
 /// 泵房状态页面
@@ -64,7 +65,7 @@ class _PumpRoomStatusPageState extends State<PumpRoomStatusPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: TechColors.bgDeep,
+      color: AppTheme.bgDeep(context),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Column(
@@ -73,7 +74,7 @@ class _PumpRoomStatusPageState extends State<PumpRoomStatusPage> {
             Expanded(
               child: TechPanel(
                 height: double.infinity,
-                accentColor: TechColors.glowCyan,
+                accentColor: AppTheme.glowCyan(context),
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
@@ -91,7 +92,7 @@ class _PumpRoomStatusPageState extends State<PumpRoomStatusPage> {
             Expanded(
               child: TechPanel(
                 height: double.infinity,
-                accentColor: TechColors.glowCyan,
+                accentColor: AppTheme.glowCyan(context),
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
@@ -140,10 +141,10 @@ class _PumpRoomStatusPageState extends State<PumpRoomStatusPage> {
         vibration: 0.5, // 模拟振动数据
         pressure: hasPressure ? _pressure?.value : null, // 仅1号泵显示压力
         // 使用默认颜色
-        powerColor: TechColors.glowCyan,
-        currentColor: TechColors.glowCyan,
-        vibrationColor: TechColors.glowGreen,
-        pressureColor: TechColors.glowOrange,
+        powerColor: AppTheme.glowCyan(context),
+        currentColor: AppTheme.glowCyan(context),
+        vibrationColor: AppTheme.glowGreen(context),
+        pressureColor: AppTheme.glowOrange(context),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 快速时间选择器组件
 /// 提供预设的时间范围快速选择
@@ -34,7 +35,7 @@ class _QuickTimeSelectorState extends State<QuickTimeSelector> {
   Widget build(BuildContext context) {
     return PopupMenuButton<Map<String, dynamic>>(
       tooltip: '快速选择时间范围',
-      color: TechColors.bgMedium,
+      color: AppTheme.bgMedium(context),
       offset: const Offset(0, 32),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: widget.accentColor.withOpacity(0.5)),
@@ -50,7 +51,7 @@ class _QuickTimeSelectorState extends State<QuickTimeSelector> {
         height: 26,
         padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          color: TechColors.bgLight.withOpacity(0.3),
+          color: AppTheme.bgLight(context).withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: widget.accentColor.withOpacity(0.5)),
         ),
@@ -59,8 +60,8 @@ class _QuickTimeSelectorState extends State<QuickTimeSelector> {
           children: [
             Text(
               _selectedLabel,
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 11,
               ),
             ),
@@ -77,8 +78,9 @@ class _QuickTimeSelectorState extends State<QuickTimeSelector> {
             child: Text(
               option['label'],
               style: TextStyle(
-                color:
-                    isSelected ? widget.accentColor : TechColors.textSecondary,
+                color: isSelected
+                    ? widget.accentColor
+                    : AppTheme.textSecondary(context),
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),

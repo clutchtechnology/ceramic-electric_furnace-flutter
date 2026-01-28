@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
 import 'tech_chart.dart';
+import '../../theme/app_theme.dart';
 
 /// 科技风格柱状图组件
 /// 用于历史轮次查询，对比不同批次的数据
@@ -14,10 +15,10 @@ class TechBarChart extends StatefulWidget {
   const TechBarChart({
     super.key,
     required this.batchData,
-    this.accentColor = TechColors.glowCyan,
+    Color? accentColor,
     this.yAxisLabel,
     this.showGrid = true,
-  });
+  }) : accentColor = accentColor ?? const Color(0xFF00d4ff);
 
   @override
   State<TechBarChart> createState() => _TechBarChartState();
@@ -32,20 +33,23 @@ class _TechBarChartState extends State<TechBarChart> {
       return Center(
         child: Text(
           '暂无数据',
-          style: TextStyle(color: TechColors.textSecondary, fontSize: 12),
+          style:
+              TextStyle(color: AppTheme.textSecondary(context), fontSize: 12),
         ),
       );
     }
 
     final entries = widget.batchData.entries.toList();
-    final maxValue = entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    final minValue = entries.map((e) => e.value).reduce((a, b) => a < b ? a : b);
+    final maxValue =
+        entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final minValue =
+        entries.map((e) => e.value).reduce((a, b) => a < b ? a : b);
     final range = maxValue - minValue;
     final effectiveMaxY = maxValue + range * 0.1;
     final effectiveMinY = (minValue > 0 ? 0.0 : minValue - range * 0.1);
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4, right: 8, top:0, bottom: 0),
+      padding: const EdgeInsets.only(left: 4, right: 8, top: 0, bottom: 0),
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
@@ -54,16 +58,18 @@ class _TechBarChartState extends State<TechBarChart> {
           barTouchData: BarTouchData(
             enabled: true,
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (_) => TechColors.bgLight.withOpacity(0.9),
-              tooltipBorder: BorderSide(color: widget.accentColor.withOpacity(0.5)),
+              getTooltipColor: (_) =>
+                  AppTheme.bgLight(context).withOpacity(0.9),
+              tooltipBorder:
+                  BorderSide(color: widget.accentColor.withOpacity(0.5)),
               tooltipRoundedRadius: 4,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 final batch = entries[groupIndex].key;
                 final value = entries[groupIndex].value;
                 return BarTooltipItem(
                   '$batch\n${value.toStringAsFixed(2)}${widget.yAxisLabel ?? ''}',
-                  const TextStyle(
-                    color: TechColors.textPrimary,
+                  TextStyle(
+                    color: AppTheme.textPrimary(context),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -89,16 +95,19 @@ class _TechBarChartState extends State<TechBarChart> {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= entries.length) return const SizedBox();
+                  if (index < 0 || index >= entries.length)
+                    return const SizedBox();
                   // 只显示批次编号的最后几位
                   final batch = entries[index].key;
-                  final shortBatch = batch.length > 8 ? batch.substring(batch.length - 6) : batch;
+                  final shortBatch = batch.length > 8
+                      ? batch.substring(batch.length - 6)
+                      : batch;
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       shortBatch,
                       style: TextStyle(
-                        color: TechColors.textSecondary,
+                        color: AppTheme.textSecondary(context),
                         fontSize: 15,
                       ),
                     ),
@@ -114,16 +123,18 @@ class _TechBarChartState extends State<TechBarChart> {
                 getTitlesWidget: (value, meta) {
                   return Text(
                     value.toStringAsFixed(0),
-                    style: const TextStyle(
-                      color: TechColors.textSecondary,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary(context),
                       fontSize: 15,
                     ),
                   );
                 },
               ),
             ),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           gridData: FlGridData(
             show: widget.showGrid,
@@ -131,7 +142,7 @@ class _TechBarChartState extends State<TechBarChart> {
             horizontalInterval: (effectiveMaxY - effectiveMinY) / 5,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: TechColors.borderGlow.withOpacity(0.15),
+                color: AppTheme.borderGlow(context).withOpacity(0.15),
                 strokeWidth: 1,
               );
             },
@@ -139,8 +150,10 @@ class _TechBarChartState extends State<TechBarChart> {
           borderData: FlBorderData(
             show: true,
             border: Border(
-              left: BorderSide(color: TechColors.borderGlow.withOpacity(0.3)),
-              bottom: BorderSide(color: TechColors.borderGlow.withOpacity(0.3)),
+              left: BorderSide(
+                  color: AppTheme.borderGlow(context).withOpacity(0.3)),
+              bottom: BorderSide(
+                  color: AppTheme.borderGlow(context).withOpacity(0.3)),
             ),
           ),
           barGroups: entries.asMap().entries.map((entry) {
@@ -163,7 +176,7 @@ class _TechBarChartState extends State<TechBarChart> {
                   backDrawRodData: BackgroundBarChartRodData(
                     show: true,
                     toY: effectiveMaxY,
-                    color: TechColors.bgLight.withOpacity(0.1),
+                    color: AppTheme.bgLight(context).withOpacity(0.1),
                   ),
                 ),
               ],
@@ -177,7 +190,8 @@ class _TechBarChartState extends State<TechBarChart> {
 
 /// 分组柱状图组件 (用于电流面板的多电极对比)
 class TechGroupedBarChart extends StatefulWidget {
-  final Map<String, Map<String, double>> groupedData; // 批次 -> {电极1: 值, 电极2: 值, ...}
+  final Map<String, Map<String, double>>
+      groupedData; // 批次 -> {电极1: 值, 电极2: 值, ...}
   final Color accentColor;
   final List<Color> colors;
   final String? yAxisLabel;
@@ -186,11 +200,13 @@ class TechGroupedBarChart extends StatefulWidget {
   const TechGroupedBarChart({
     super.key,
     required this.groupedData,
-    this.accentColor = TechColors.glowCyan,
-    this.colors = const [TechColors.glowCyan, TechColors.glowGreen, TechColors.glowOrange],
+    Color? accentColor,
+    List<Color>? colors,
     this.yAxisLabel,
     this.showGrid = true,
-  });
+  })  : accentColor = accentColor ?? const Color(0xFF00d4ff),
+        colors = colors ??
+            const [Color(0xFF00d4ff), Color(0xFF00ff88), Color(0xFFff9500)];
 
   @override
   State<TechGroupedBarChart> createState() => _TechGroupedBarChartState();
@@ -206,7 +222,8 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
       return Center(
         child: Text(
           '暂无数据',
-          style: TextStyle(color: TechColors.textSecondary, fontSize: 12),
+          style:
+              TextStyle(color: AppTheme.textSecondary(context), fontSize: 12),
         ),
       );
     }
@@ -237,8 +254,10 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
           barTouchData: BarTouchData(
             enabled: true,
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (_) => TechColors.bgLight.withOpacity(0.9),
-              tooltipBorder: BorderSide(color: widget.accentColor.withOpacity(0.5)),
+              getTooltipColor: (_) =>
+                  AppTheme.bgLight(context).withOpacity(0.9),
+              tooltipBorder:
+                  BorderSide(color: widget.accentColor.withOpacity(0.5)),
               tooltipRoundedRadius: 4,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 final batch = batches[groupIndex];
@@ -246,8 +265,8 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
                 final value = widget.groupedData[batch]![electrode]!;
                 return BarTooltipItem(
                   '$batch\n$electrode: ${value.toStringAsFixed(2)}${widget.yAxisLabel ?? ''}',
-                  const TextStyle(
-                    color: TechColors.textPrimary,
+                  TextStyle(
+                    color: AppTheme.textPrimary(context),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -263,7 +282,8 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
                   _touchedRodIndex = null;
                   return;
                 }
-                _touchedGroupIndex = barTouchResponse.spot!.touchedBarGroupIndex;
+                _touchedGroupIndex =
+                    barTouchResponse.spot!.touchedBarGroupIndex;
                 _touchedRodIndex = barTouchResponse.spot!.touchedRodDataIndex;
               });
             },
@@ -275,15 +295,18 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= batches.length) return const SizedBox();
+                  if (index < 0 || index >= batches.length)
+                    return const SizedBox();
                   final batch = batches[index];
-                  final shortBatch = batch.length > 8 ? batch.substring(batch.length - 6) : batch;
+                  final shortBatch = batch.length > 8
+                      ? batch.substring(batch.length - 6)
+                      : batch;
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       shortBatch,
                       style: TextStyle(
-                        color: TechColors.textSecondary,
+                        color: AppTheme.textSecondary(context),
                         fontSize: 15,
                       ),
                     ),
@@ -299,16 +322,18 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
                 getTitlesWidget: (value, meta) {
                   return Text(
                     value.toStringAsFixed(0),
-                    style: const TextStyle(
-                      color: TechColors.textSecondary,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary(context),
                       fontSize: 15,
                     ),
                   );
                 },
               ),
             ),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           gridData: FlGridData(
             show: widget.showGrid,
@@ -316,7 +341,7 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
             horizontalInterval: (effectiveMaxY - effectiveMinY) / 5,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: TechColors.borderGlow.withOpacity(0.15),
+                color: AppTheme.borderGlow(context).withOpacity(0.15),
                 strokeWidth: 1,
               );
             },
@@ -324,8 +349,10 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
           borderData: FlBorderData(
             show: true,
             border: Border(
-              left: BorderSide(color: TechColors.borderGlow.withOpacity(0.3)),
-              bottom: BorderSide(color: TechColors.borderGlow.withOpacity(0.3)),
+              left: BorderSide(
+                  color: AppTheme.borderGlow(context).withOpacity(0.3)),
+              bottom: BorderSide(
+                  color: AppTheme.borderGlow(context).withOpacity(0.3)),
             ),
           ),
           barGroups: batches.asMap().entries.map((entry) {
@@ -340,8 +367,8 @@ class _TechGroupedBarChartState extends State<TechGroupedBarChart> {
                 final rodIndex = rodEntry.key;
                 final electrode = rodEntry.value;
                 final value = batchData[electrode]!;
-                final isTouched =
-                    groupIndex == _touchedGroupIndex && rodIndex == _touchedRodIndex;
+                final isTouched = groupIndex == _touchedGroupIndex &&
+                    rodIndex == _touchedRodIndex;
                 final color = widget.colors[rodIndex % widget.colors.length];
 
                 return BarChartRodData(

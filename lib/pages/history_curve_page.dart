@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import '../widgets/common/tech_line_widgets.dart';
 import '../widgets/history_curve/time_range_selector.dart';
 import '../widgets/history_curve/tech_chart.dart';
@@ -289,14 +290,14 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
   }
 
   // 构建下拉菜单辅助组件
-  Widget _buildDropdown(
-      List<String> items, String? value, ValueChanged<String?> onChanged,
+  Widget _buildDropdown(List<String> items, String? value,
+      ValueChanged<String?> onChanged,
       {required Color accentColor}) {
     final displayValue = value ?? (items.isNotEmpty ? items.first : '无数据');
     return PopupMenuButton<String>(
       initialValue: value,
       tooltip: '选择显示项',
-      color: TechColors.bgMedium,
+      color: AppTheme.bgMedium(context),
       offset: const Offset(0, 32),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: accentColor.withOpacity(0.5)),
@@ -307,7 +308,7 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
         height: 28,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
         decoration: BoxDecoration(
-          color: TechColors.bgLight.withOpacity(0.3),
+          color: AppTheme.bgLight(context).withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: accentColor.withOpacity(0.5)),
         ),
@@ -317,7 +318,7 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
             Text(
               displayValue,
               style:
-                  const TextStyle(color: TechColors.textPrimary, fontSize: 16),
+                  TextStyle(color: AppTheme.textPrimary(context), fontSize: 16),
             ),
             const SizedBox(width: 4),
             Icon(Icons.arrow_drop_down, color: accentColor, size: 18),
@@ -333,7 +334,8 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
             child: Text(
               item,
               style: TextStyle(
-                color: isSelected ? accentColor : TechColors.textSecondary,
+                color:
+                    isSelected ? accentColor : AppTheme.textSecondary(context),
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
@@ -424,7 +426,7 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
       {required Color accentColor}) {
     return PopupMenuButton<String>(
       tooltip: '选择显示项',
-      color: TechColors.bgMedium,
+      color: AppTheme.bgMedium(context),
       offset: const Offset(0, 32),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: accentColor.withOpacity(0.5)),
@@ -434,7 +436,7 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
         height: 28,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: TechColors.bgLight.withOpacity(0.3),
+          color: AppTheme.bgLight(context).withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: accentColor.withOpacity(0.5)),
         ),
@@ -444,7 +446,7 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
             Text(
               '已选 ${selectedValues.length} 项',
               style:
-                  const TextStyle(color: TechColors.textPrimary, fontSize: 12),
+                  TextStyle(color: AppTheme.textPrimary(context), fontSize: 12),
             ),
             const SizedBox(width: 4),
             Icon(Icons.arrow_drop_down, color: accentColor, size: 18),
@@ -462,7 +464,8 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
             child: Text(
               item,
               style: TextStyle(
-                color: isSelected ? accentColor : TechColors.textSecondary,
+                color:
+                    isSelected ? accentColor : AppTheme.textSecondary(context),
                 fontSize: 12,
               ),
             ),
@@ -478,10 +481,10 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: TechColors.bgDark,
+        color: AppTheme.bgDark(context),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: TechColors.glowCyan.withOpacity(0.3),
+          color: AppTheme.glowCyan(context).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -509,13 +512,13 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: _isHistoryMode
-                    ? TechColors.glowCyan.withOpacity(0.2)
-                    : TechColors.bgLight.withOpacity(0.3),
+                    ? AppTheme.glowCyan(context).withOpacity(0.2)
+                    : AppTheme.bgLight(context).withOpacity(0.3),
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
                   color: _isHistoryMode
-                      ? TechColors.glowCyan
-                      : TechColors.glowCyan.withOpacity(0.5),
+                      ? AppTheme.glowCyan(context)
+                      : AppTheme.glowCyan(context).withOpacity(0.5),
                   width: _isHistoryMode ? 1.5 : 1,
                 ),
               ),
@@ -523,7 +526,7 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                 children: [
                   Icon(
                     _isHistoryMode ? Icons.bar_chart : Icons.timeline,
-                    color: TechColors.glowCyan,
+                    color: AppTheme.glowCyan(context),
                     size: 18,
                   ),
                   const SizedBox(width: 6),
@@ -531,8 +534,8 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
                     '历史轮次查询',
                     style: TextStyle(
                       color: _isHistoryMode
-                          ? TechColors.glowCyan
-                          : TechColors.textPrimary,
+                          ? AppTheme.glowCyan(context)
+                          : AppTheme.textPrimary(context),
                       fontSize: 14,
                       fontWeight:
                           _isHistoryMode ? FontWeight.bold : FontWeight.normal,
@@ -560,37 +563,37 @@ class _HistoryCurvePageState extends State<HistoryCurvePage> {
               _batchOptions,
               _selectedBatches,
               _onBatchToggled,
-              accentColor: TechColors.glowCyan,
+              accentColor: AppTheme.glowCyan(context),
             )
           else
             _buildDropdown(
               _batchOptions,
               _selectedBatch,
               _onBatchSelected,
-              accentColor: TechColors.glowCyan,
+              accentColor: AppTheme.glowCyan(context),
             ),
           const SizedBox(width: 24),
           // 时间选择器（历史模式下隐藏）
           if (!_isHistoryMode)
             TimeRangeSelector(
-              accentColor: TechColors.glowCyan,
+              accentColor: AppTheme.glowCyan(context),
               onTimeRangeChanged: _onTimeRangeChanged,
             ),
           const Spacer(),
           // 加载状态指示器
           if (_isLoadingData || _isLoadingSummary)
-            const Padding(
-              padding: EdgeInsets.only(right: 12),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
               child: SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: TechColors.glowCyan),
+                    strokeWidth: 2, color: AppTheme.glowCyan(context)),
               ),
             ),
           // 刷新按钮
           RefreshButton(
-            accentColor: TechColors.glowCyan,
+            accentColor: AppTheme.glowCyan(context),
             onPressed: _refreshAllData,
           ),
         ],

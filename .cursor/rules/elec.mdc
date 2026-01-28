@@ -1,0 +1,61 @@
+---
+alwaysApply: true
+---
+
+# Flutter UI 参考项目规则
+
+## 项目用途
+
+1. 作为被参考的 UI，用于创建 PyQt6 窗口
+2. 对于各个组件的话，page 以及 widget 的复刻参考
+
+## 注释规范
+
+**使用序号+注释风格，不使用文档字符串注解**：
+
+```python
+# 1. 初始化组件
+def __init__(self):
+    pass
+
+# 2. 加载数据
+def load_data(self):
+    pass
+```
+
+❌ **不要使用**：
+```python
+def __init__(self):
+    """初始化组件"""
+    pass
+```
+
+## 代码设计原则
+
+### 避免过度抽象
+
+- **不要提前抽象**：需要用的时候再抽象，不要一开始就创建大量工具方法
+- **避免冗余方法**：一个文件不要抽象出太多方法，保持简洁
+- **实用主义**：能直接写就直接写，不要为了"优雅"而过度封装
+
+✅ **好的做法**：
+```python
+# 直接实现功能
+def process_data(self, data):
+    result = data * 2 + 10
+    return result
+```
+
+❌ **过度抽象**：
+```python
+def _multiply(self, x, y):
+    return x * y
+
+def _add(self, x, y):
+    return x + y
+
+def process_data(self, data):
+    temp = self._multiply(data, 2)
+    result = self._add(temp, 10)
+    return result
+```

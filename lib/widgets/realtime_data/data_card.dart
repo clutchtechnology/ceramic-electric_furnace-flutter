@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
 import '../common/blinking_text.dart';
+import '../../theme/app_theme.dart';
 
 /// 数据项模型
 class DataItem {
@@ -50,44 +51,45 @@ class DataCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.3),
+        color: AppTheme.bgMedium(context).withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: TechColors.borderDark,
+          color: AppTheme.borderDark(context),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: _buildRows(),
+        children: _buildRows(context),
       ),
     );
   }
 
-  List<Widget> _buildRows() {
+  List<Widget> _buildRows(BuildContext context) {
     final List<Widget> widgets = [];
     for (int i = 0; i < items.length; i++) {
-      widgets.add(_buildDataRow(items[i]));
+      widgets.add(_buildDataRow(context, items[i]));
       if (i < items.length - 1) {
-        widgets.add(const Divider(height: 12, color: TechColors.borderDark));
+        widgets.add(Divider(height: 12, color: AppTheme.borderDark(context)));
       }
     }
     return widgets;
   }
 
-  Widget _buildDataRow(DataItem item) {
-    final color = item.iconColor ?? TechColors.glowCyan;
+  Widget _buildDataRow(BuildContext context, DataItem item) {
+    final color = item.iconColor ?? AppTheme.borderGlow(context);
     final isAlarm = item.isAlarm;
-    final valueColor = isAlarm ? TechColors.glowRed : TechColors.glowCyan;
+    final valueColor =
+        isAlarm ? AppTheme.glowRed(context) : AppTheme.borderGlow(context);
 
     // 1. 构建正常显示的内容
     Widget content = Padding(
-      padding: const EdgeInsets.symmetric(
-          vertical: 3), // Reduced vertical padding
+      padding:
+          const EdgeInsets.symmetric(vertical: 3), // Reduced vertical padding
       child: Row(
         children: [
           // 报警图标闪烁效果
           if (isAlarm)
-            _AlarmIcon(icon: item.icon, color: TechColors.glowRed)
+            _AlarmIcon(icon: item.icon, color: AppTheme.glowRed(context))
           else
             Icon(
               item.icon,
@@ -102,8 +104,8 @@ class DataCard extends StatelessWidget {
               children: [
                 Text(
                   item.label,
-                  style: const TextStyle(
-                    color: TechColors.textSecondary,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary(context),
                     fontSize: 18,
                   ),
                 ),
@@ -117,14 +119,14 @@ class DataCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: TechColors.glowRed.withOpacity(0.2),
+                color: AppTheme.glowRed(context).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: TechColors.glowRed),
+                border: Border.all(color: AppTheme.glowRed(context)),
               ),
-              child: const Text(
+              child: Text(
                 '报警',
                 style: TextStyle(
-                  color: TechColors.glowRed,
+                  color: AppTheme.glowRed(context),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -153,7 +155,9 @@ class DataCard extends StatelessWidget {
             text: item.unit,
             isBlinking: isAlarm,
             style: TextStyle(
-              color: isAlarm ? TechColors.glowRed : TechColors.textSecondary,
+              color: isAlarm
+                  ? AppTheme.glowRed(context)
+                  : AppTheme.textSecondary(context),
               fontSize: 20,
             ),
           ),
@@ -246,34 +250,35 @@ class FurnaceDataCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.3),
+        color: AppTheme.bgMedium(context).withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: TechColors.borderDark,
+          color: AppTheme.borderDark(context),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: _buildRows(),
+        children: _buildRows(context),
       ),
     );
   }
 
-  List<Widget> _buildRows() {
+  List<Widget> _buildRows(BuildContext context) {
     final List<Widget> widgets = [];
     for (int i = 0; i < items.length; i++) {
-      widgets.add(_buildDataRow(items[i]));
+      widgets.add(_buildDataRow(context, items[i]));
       if (i < items.length - 1) {
-        widgets.add(const Divider(height: 14, color: TechColors.borderDark));
+        widgets.add(Divider(height: 14, color: AppTheme.borderDark(context)));
       }
     }
     return widgets;
   }
 
-  Widget _buildDataRow(DataItem item) {
-    final color = item.iconColor ?? TechColors.glowCyan;
+  Widget _buildDataRow(BuildContext context, DataItem item) {
+    final color = item.iconColor ?? AppTheme.borderGlow(context);
     final isAlarm = item.isAlarm;
-    final valueColor = isAlarm ? TechColors.glowRed : TechColors.glowCyan;
+    final valueColor =
+        isAlarm ? AppTheme.glowRed(context) : AppTheme.borderGlow(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -281,7 +286,7 @@ class FurnaceDataCard extends StatelessWidget {
         children: [
           // 报警图标闪烁效果
           if (isAlarm)
-            _AlarmIcon(icon: item.icon, color: TechColors.glowRed)
+            _AlarmIcon(icon: item.icon, color: AppTheme.glowRed(context))
           else
             Icon(
               item.icon,

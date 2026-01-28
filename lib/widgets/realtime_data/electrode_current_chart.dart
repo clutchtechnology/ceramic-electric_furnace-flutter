@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 电极电流柱状图组件
 /// 显示三个电极的设定值和实际值对比
@@ -33,12 +34,12 @@ class ElectrodeCurrentChart extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Y轴标签
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
                     child: Text(
                       '弧流 (A)',
                       style: TextStyle(
-                        color: TechColors.textSecondary,
+                        color: AppTheme.textSecondary(context),
                         fontSize: 18,
                       ),
                     ),
@@ -50,7 +51,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         // Y轴刻度
-                        _buildYAxis(maxValue),
+                        _buildYAxis(context, maxValue),
                         const SizedBox(width: 4),
                         // 柱状图
                         Expanded(
@@ -58,8 +59,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: electrodes
-                                .map((electrode) =>
-                                    _buildElectrodeGroup(electrode, maxValue))
+                                .map((electrode) => _buildElectrodeGroup(
+                                    context, electrode, maxValue))
                                 .toList(),
                           ),
                         ),
@@ -73,7 +74,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
               Positioned(
                 top: 0,
                 right: 0,
-                child: _buildLegend(),
+                child: _buildLegend(context),
               ),
             ],
           ),
@@ -83,7 +84,7 @@ class ElectrodeCurrentChart extends StatelessWidget {
   }
 
   /// 构建Y轴刻度
-  Widget _buildYAxis(double maxValue) {
+  Widget _buildYAxis(BuildContext context, double maxValue) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -92,11 +93,11 @@ class ElectrodeCurrentChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _buildYAxisLabel(maxValue.toStringAsFixed(0)),
-              _buildYAxisLabel((maxValue * 0.75).toStringAsFixed(0)),
-              _buildYAxisLabel((maxValue * 0.5).toStringAsFixed(0)),
-              _buildYAxisLabel((maxValue * 0.25).toStringAsFixed(0)),
-              _buildYAxisLabel('0'),
+              _buildYAxisLabel(context, maxValue.toStringAsFixed(0)),
+              _buildYAxisLabel(context, (maxValue * 0.75).toStringAsFixed(0)),
+              _buildYAxisLabel(context, (maxValue * 0.5).toStringAsFixed(0)),
+              _buildYAxisLabel(context, (maxValue * 0.25).toStringAsFixed(0)),
+              _buildYAxisLabel(context, '0'),
             ],
           ),
         ),
@@ -110,18 +111,19 @@ class ElectrodeCurrentChart extends StatelessWidget {
     );
   }
 
-  Widget _buildYAxisLabel(String label) {
+  Widget _buildYAxisLabel(BuildContext context, String label) {
     return Text(
       label,
-      style: const TextStyle(
-        color: TechColors.textSecondary,
+      style: TextStyle(
+        color: AppTheme.textSecondary(context),
         fontSize: 16,
       ),
     );
   }
 
   /// 构建单个电极组（设定值+实际值）
-  Widget _buildElectrodeGroup(ElectrodeData electrode, double maxValue) {
+  Widget _buildElectrodeGroup(
+      BuildContext context, ElectrodeData electrode, double maxValue) {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -138,9 +140,10 @@ class ElectrodeCurrentChart extends StatelessWidget {
                   SizedBox(
                     width: 25,
                     child: _buildBar(
+                      context,
                       value: electrode.setValue,
                       maxValue: maxValue,
-                      color: TechColors.glowCyan,
+                      color: AppTheme.borderGlow(context),
                       label: electrode.setValue
                           .toStringAsFixed(0), // 整数显示 (5978 A)
                     ),
@@ -150,9 +153,10 @@ class ElectrodeCurrentChart extends StatelessWidget {
                   SizedBox(
                     width: 25,
                     child: _buildBar(
+                      context,
                       value: electrode.actualValue,
                       maxValue: maxValue,
-                      color: TechColors.glowOrange,
+                      color: AppTheme.glowOrange(context),
                       label:
                           electrode.actualValue.toStringAsFixed(0), // 整数显示 (A)
                     ),
@@ -164,8 +168,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
             // X轴标签
             Text(
               electrode.name,
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -177,7 +181,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
   }
 
   /// 构建单个柱子
-  Widget _buildBar({
+  Widget _buildBar(
+    BuildContext context, {
     required double value,
     required double maxValue,
     required Color color,
@@ -191,8 +196,9 @@ class ElectrodeCurrentChart extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // 保护: 确保 maxHeight 有效
-        final maxHeight = constraints.maxHeight.isFinite ? constraints.maxHeight : 200.0;
-        
+        final maxHeight =
+            constraints.maxHeight.isFinite ? constraints.maxHeight : 200.0;
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -215,7 +221,8 @@ class ElectrodeCurrentChart extends StatelessWidget {
             // 柱子
             Container(
               width: double.infinity,
-              height: (maxHeight * heightRatio).clamp(0.0, maxHeight), // 再次确保高度有效
+              height:
+                  (maxHeight * heightRatio).clamp(0.0, maxHeight), // 再次确保高度有效
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
@@ -247,14 +254,14 @@ class ElectrodeCurrentChart extends StatelessWidget {
   }
 
   /// 构建图例
-  Widget _buildLegend() {
+  Widget _buildLegend(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: TechColors.bgDark.withOpacity(0.8),
+        color: AppTheme.bgDark(context).withOpacity(0.8),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: TechColors.borderDark,
+          color: AppTheme.borderDark(context),
         ),
       ),
       child: Row(
@@ -263,22 +270,22 @@ class ElectrodeCurrentChart extends StatelessWidget {
           // 死区显示
           Text(
             '死区 ${deadzonePercent.toStringAsFixed(0)}%',
-            style: const TextStyle(
-              color: TechColors.glowGreen,
+            style: TextStyle(
+              color: AppTheme.glowGreen(context),
               fontSize: 17,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(width: 12),
-          _buildLegendItem('设定值', TechColors.glowCyan),
+          _buildLegendItem(context, '设定值', AppTheme.borderGlow(context)),
           const SizedBox(width: 12),
-          _buildLegendItem('实际值', TechColors.glowOrange),
+          _buildLegendItem(context, '实际值', AppTheme.glowOrange(context)),
         ],
       ),
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(BuildContext context, String label, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

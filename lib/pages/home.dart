@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:async';
+import '../theme/app_theme.dart';
 import '../widgets/common/tech_line_widgets.dart';
 import '../widgets/common/health_status.dart';
 import '../models/app_state.dart';
@@ -140,7 +141,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ 轮询已启动 | 批次号: ${response.batchCode}'),
-            backgroundColor: TechColors.statusNormal,
+            backgroundColor: AppTheme.statusNormal(context),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -154,7 +155,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ 启动失败: $e'),
-            backgroundColor: TechColors.statusAlarm,
+            backgroundColor: AppTheme.statusAlarm(context),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -187,7 +188,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
           SnackBar(
             content:
                 Text('🛑 轮询已停止 | 批次号: ${response.batchCode} | 运行时长: $duration'),
-            backgroundColor: TechColors.statusWarning,
+            backgroundColor: AppTheme.statusWarning(context),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -201,7 +202,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ 停止失败: $e'),
-            backgroundColor: TechColors.statusAlarm,
+            backgroundColor: AppTheme.statusAlarm(context),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -219,11 +220,11 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
         barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: TechColors.bgDark,
+            backgroundColor: AppTheme.bgDark(context),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
               side: BorderSide(
-                color: TechColors.statusWarning.withOpacity(0.5),
+                color: AppTheme.statusWarning(context).withOpacity(0.5),
                 width: 1,
               ),
             ),
@@ -231,14 +232,14 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               children: [
                 Icon(
                   Icons.warning_amber_rounded,
-                  color: TechColors.statusWarning,
+                  color: AppTheme.statusWarning(context),
                   size: 28,
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   '确认关闭',
                   style: TextStyle(
-                    color: TechColors.textPrimary,
+                    color: AppTheme.textPrimary(context),
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -252,7 +253,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 Text(
                   '系统当前正在运行数据采集',
                   style: TextStyle(
-                    color: TechColors.textPrimary,
+                    color: AppTheme.textPrimary(context),
                     fontSize: 15,
                   ),
                 ),
@@ -260,24 +261,24 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: TechColors.bgMedium,
+                    color: AppTheme.bgMedium(context),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: TechColors.statusNormal.withOpacity(0.3),
+                      color: AppTheme.statusNormal(context).withOpacity(0.3),
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.play_circle_filled,
-                        color: TechColors.statusNormal,
+                        color: AppTheme.statusNormal(context),
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '批次号: ${_currentBatchCode ?? 'N/A'}',
                         style: TextStyle(
-                          color: TechColors.statusNormal,
+                          color: AppTheme.statusNormal(context),
                           fontSize: 14,
                           fontFamily: 'Roboto Mono',
                           fontWeight: FontWeight.w600,
@@ -290,7 +291,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 Text(
                   '关闭程序将停止数据采集，确定要关闭吗？',
                   style: TextStyle(
-                    color: TechColors.statusWarning,
+                    color: AppTheme.statusWarning(context),
                     fontSize: 14,
                   ),
                 ),
@@ -306,7 +307,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 child: Text(
                   '取消',
                   style: TextStyle(
-                    color: TechColors.textSecondary,
+                    color: AppTheme.textSecondary(context),
                     fontSize: 14,
                   ),
                 ),
@@ -314,7 +315,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: TechColors.statusAlarm,
+                  backgroundColor: AppTheme.statusAlarm(context),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 ),
@@ -373,14 +374,14 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TechColors.bgDeep,
+      backgroundColor: AppTheme.bgDeep(context),
       body: AnimatedGridBackground(
-        gridColor: TechColors.borderDark.withOpacity(0.3),
+        gridColor: AppTheme.borderDark(context).withOpacity(0.3),
         gridSize: 40,
         child: Column(
           children: [
             // 顶部导航栏
-            _buildTopNavBar(),
+            _buildTopNavBar(context),
             // 主内容区 - 使用 IndexedStack 保持页面状态，避免切换时重建
             Expanded(
               child: IndexedStack(
@@ -404,7 +405,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
   // _buildCurrentPage 方法已移除，由 IndexedStack 替代
 
   /// 顶部导航栏
-  Widget _buildTopNavBar() {
+  Widget _buildTopNavBar(BuildContext context) {
     final navItems = ['数据大屏', '历史曲线', '报警记录', '设备状态'];
 
     return DragToMoveArea(
@@ -412,10 +413,10 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
         height: 50,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: TechColors.bgDark.withOpacity(0.9),
+          color: AppTheme.bgDark(context).withOpacity(0.9),
           border: Border(
             bottom: BorderSide(
-              color: TechColors.glowCyan.withOpacity(0.3),
+              color: AppTheme.glowCyan(context).withOpacity(0.3),
             ),
           ),
         ),
@@ -428,11 +429,11 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                   width: 4,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: TechColors.glowCyan,
+                    color: AppTheme.glowCyan(context),
                     borderRadius: BorderRadius.circular(2),
                     boxShadow: [
                       BoxShadow(
-                        color: TechColors.glowCyan.withOpacity(0.5),
+                        color: AppTheme.glowCyan(context).withOpacity(0.5),
                         blurRadius: 8,
                       ),
                     ],
@@ -440,8 +441,11 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 ),
                 const SizedBox(width: 12),
                 ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [TechColors.glowCyan, TechColors.glowCyanLight],
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      AppTheme.glowCyan(context),
+                      AppTheme.glowCyanLight(context)
+                    ],
                   ).createShader(bounds),
                   child: const Text(
                     '3号电炉系统',
@@ -468,12 +472,12 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? TechColors.glowCyan.withOpacity(0.15)
+                        ? AppTheme.glowCyan(context).withOpacity(0.15)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: isSelected
-                          ? TechColors.glowCyan.withOpacity(0.5)
+                          ? AppTheme.glowCyan(context).withOpacity(0.5)
                           : Colors.transparent,
                     ),
                   ),
@@ -481,8 +485,8 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                     navItems[index],
                     style: TextStyle(
                       color: isSelected
-                          ? TechColors.glowCyan
-                          : TechColors.textSecondary,
+                          ? AppTheme.glowCyan(context)
+                          : AppTheme.textSecondary(context),
                       fontSize: 15,
                       fontWeight:
                           isSelected ? FontWeight.w500 : FontWeight.w400,
@@ -493,7 +497,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             }),
             const Spacer(),
             // 时间显示 + 健康状态
-            _buildClockDisplay(),
+            _buildClockDisplay(context),
             const SizedBox(width: 12),
             // 系统配置按钮
             IconButton(
@@ -501,8 +505,8 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               icon: Icon(
                 Icons.settings,
                 color: _selectedNavIndex == 4
-                    ? TechColors.glowCyan
-                    : TechColors.textSecondary,
+                    ? AppTheme.glowCyan(context)
+                    : AppTheme.textSecondary(context),
                 size: 20,
               ),
               splashRadius: 18,
@@ -517,9 +521,9 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 }
                 await windowManager.minimize();
               },
-              icon: const Icon(
+              icon: Icon(
                 Icons.remove,
-                color: TechColors.textSecondary,
+                color: AppTheme.textSecondary(context),
                 size: 20,
               ),
               splashRadius: 18,
@@ -528,9 +532,9 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
             // 关闭按钮
             IconButton(
               onPressed: () => _handleCloseWindow(),
-              icon: const Icon(
+              icon: Icon(
                 Icons.close,
-                color: TechColors.textSecondary,
+                color: AppTheme.textSecondary(context),
                 size: 20,
               ),
               splashRadius: 18,
@@ -542,13 +546,13 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
     );
   }
 
-  Widget _buildClockDisplay() {
+  Widget _buildClockDisplay(BuildContext context) {
     // 使用 Timer + setState 替代 StreamBuilder 防止内存泄漏
     return Row(
       children: [
         // 刷新数据按钮（仅在实时数据页面显示）
         if (_selectedNavIndex == 0) ...[
-          _buildRefreshButton(),
+          _buildRefreshButton(context),
           const SizedBox(width: 12),
         ],
         // 健康状态指示器
@@ -561,22 +565,22 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: TechColors.bgMedium,
+            color: AppTheme.bgMedium(context),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: TechColors.glowCyan.withOpacity(0.3),
+              color: AppTheme.glowCyan(context).withOpacity(0.3),
             ),
           ),
           child: Text(
             _timeString.isEmpty ? '--:--:--' : _timeString,
             style: TextStyle(
-              color: TechColors.glowCyan,
+              color: AppTheme.glowCyan(context),
               fontSize: 14,
               fontFamily: 'Roboto Mono',
               fontWeight: FontWeight.w500,
               shadows: [
                 Shadow(
-                  color: TechColors.glowCyan.withOpacity(0.5),
+                  color: AppTheme.glowCyan(context).withOpacity(0.5),
                   blurRadius: 8,
                 ),
               ],
@@ -588,7 +592,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
   }
 
   /// 构建刷新按钮
-  Widget _buildRefreshButton() {
+  Widget _buildRefreshButton(BuildContext context) {
     return InkWell(
       onTap: _isRefreshing
           ? null
@@ -605,13 +609,13 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: _isRefreshing
-              ? TechColors.bgMedium
-              : TechColors.glowOrange.withOpacity(0.2),
+              ? AppTheme.bgMedium(context)
+              : AppTheme.glowOrange(context).withOpacity(0.2),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: _isRefreshing
-                ? TechColors.borderDark
-                : TechColors.glowOrange.withOpacity(0.6),
+                ? AppTheme.borderDark(context)
+                : AppTheme.glowOrange(context).withOpacity(0.6),
             width: 1,
           ),
         ),
@@ -625,7 +629,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    TechColors.glowOrange,
+                    AppTheme.glowOrange(context),
                   ),
                 ),
               )
@@ -633,15 +637,15 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               Icon(
                 Icons.refresh,
                 size: 16,
-                color: TechColors.glowOrange,
+                color: AppTheme.glowOrange(context),
               ),
             const SizedBox(width: 6),
             Text(
               _isRefreshing ? '刷新中...' : '刷新数据',
               style: TextStyle(
                 color: _isRefreshing
-                    ? TechColors.textSecondary
-                    : TechColors.glowOrange,
+                    ? AppTheme.textSecondary(context)
+                    : AppTheme.glowOrange(context),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Roboto Mono',
@@ -654,7 +658,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
   }
 
   /// 开始验连按钮
-  Widget _buildStartButton() {
+  Widget _buildStartButton(BuildContext context) {
     return MouseRegion(
       cursor: _isStarting ? SystemMouseCursors.wait : SystemMouseCursors.click,
       child: GestureDetector(
@@ -666,21 +670,21 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               colors: _isStarting
                   ? [Colors.grey.shade700, Colors.grey.shade800]
                   : [
-                      TechColors.statusNormal,
-                      TechColors.statusNormal.withOpacity(0.8)
+                      AppTheme.statusNormal(context),
+                      AppTheme.statusNormal(context).withOpacity(0.8)
                     ],
             ),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
               color: _isStarting
                   ? Colors.grey.shade600
-                  : TechColors.statusNormal.withOpacity(0.5),
+                  : AppTheme.statusNormal(context).withOpacity(0.5),
             ),
             boxShadow: _isStarting
                 ? []
                 : [
                     BoxShadow(
-                      color: TechColors.statusNormal.withOpacity(0.3),
+                      color: AppTheme.statusNormal(context).withOpacity(0.3),
                       blurRadius: 8,
                       spreadRadius: 1,
                     ),
@@ -722,7 +726,7 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
   }
 
   /// 停止验连按钮
-  Widget _buildStopButton() {
+  Widget _buildStopButton(BuildContext context) {
     return MouseRegion(
       cursor: _isStopping ? SystemMouseCursors.wait : SystemMouseCursors.click,
       child: GestureDetector(
@@ -734,21 +738,21 @@ class _DigitalTwinPageState extends State<DigitalTwinPage> {
               colors: _isStopping
                   ? [Colors.grey.shade700, Colors.grey.shade800]
                   : [
-                      TechColors.statusAlarm,
-                      TechColors.statusAlarm.withOpacity(0.8)
+                      AppTheme.statusAlarm(context),
+                      AppTheme.statusAlarm(context).withOpacity(0.8)
                     ],
             ),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
               color: _isStopping
                   ? Colors.grey.shade600
-                  : TechColors.statusAlarm.withOpacity(0.5),
+                  : AppTheme.statusAlarm(context).withOpacity(0.5),
             ),
             boxShadow: _isStopping
                 ? []
                 : [
                     BoxShadow(
-                      color: TechColors.statusAlarm.withOpacity(0.3),
+                      color: AppTheme.statusAlarm(context).withOpacity(0.3),
                       blurRadius: 8,
                       spreadRadius: 1,
                     ),

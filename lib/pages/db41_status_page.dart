@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../widgets/common/tech_line_widgets.dart';
+import '../theme/app_theme.dart';
+
 import '../api/status_service.dart';
 import '../models/status_model.dart';
 
@@ -138,16 +139,16 @@ class Db41StatusPageState extends State<Db41StatusPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TechColors.bgDeep,
+      backgroundColor: AppTheme.bgDeep(context),
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           Expanded(
             child: _errorMessage != null
-                ? _buildErrorWidget()
+                ? _buildErrorWidget(context)
                 : _response == null
-                    ? _buildLoadingWidget()
-                    : _buildDeviceGrid(),
+                    ? _buildLoadingWidget(context)
+                    : _buildDeviceGrid(context),
           ),
         ],
       ),
@@ -155,47 +156,51 @@ class Db41StatusPageState extends State<Db41StatusPage> {
   }
 
   /// 顶部状态栏
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     final summary = _response?.summary ?? StatusSummary.empty();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: TechColors.bgDark,
+        color: AppTheme.bgDark(context),
         border: Border(
-          bottom: BorderSide(color: TechColors.borderDark.withOpacity(0.5)),
+          bottom:
+              BorderSide(color: AppTheme.borderDark(context).withOpacity(0.5)),
         ),
       ),
       child: Row(
         children: [
           // 标题
-          const Icon(Icons.sensors, color: TechColors.glowOrange, size: 20),
+          Icon(Icons.sensors, color: AppTheme.glowOrange(context), size: 20),
           const SizedBox(width: 8),
-          const Text(
-            'DB41 传感器数据状态',
+          Text(
+            'DB41 ',
             style: TextStyle(
-              color: TechColors.textPrimary,
+              color: AppTheme.textPrimary(context),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
           const Spacer(),
           // 统计
-          _buildStatChip('正常', summary.healthy, TechColors.glowGreen),
+          _buildStatChip(
+              context, '正常', summary.healthy, AppTheme.glowGreen(context)),
           const SizedBox(width: 8),
-          _buildStatChip('异常', summary.error, TechColors.glowRed),
+          _buildStatChip(
+              context, '异常', summary.error, AppTheme.glowRed(context)),
           const SizedBox(width: 8),
-          _buildStatChip('总数', summary.total, TechColors.glowOrange),
+          _buildStatChip(
+              context, '总数', summary.total, AppTheme.glowOrange(context)),
           const SizedBox(width: 12),
           // 刷新指示器
           if (_isRefreshing)
-            const SizedBox(
+            SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor:
-                    AlwaysStoppedAnimation<Color>(TechColors.glowOrange),
+                    AlwaysStoppedAnimation<Color>(AppTheme.glowOrange(context)),
               ),
             ),
         ],
@@ -203,7 +208,8 @@ class Db41StatusPageState extends State<Db41StatusPage> {
     );
   }
 
-  Widget _buildStatChip(String label, int count, Color color) {
+  Widget _buildStatChip(
+      BuildContext context, String label, int count, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -232,57 +238,59 @@ class Db41StatusPageState extends State<Db41StatusPage> {
     );
   }
 
-  Widget _buildLoadingWidget() {
-    return const Center(
+  Widget _buildLoadingWidget(BuildContext context) {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(TechColors.glowOrange),
+            valueColor:
+                AlwaysStoppedAnimation<Color>(AppTheme.glowOrange(context)),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             '正在加载状态数据...',
-            style: TextStyle(color: TechColors.textSecondary),
+            style: TextStyle(color: AppTheme.textSecondary(context)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: TechColors.glowRed, size: 48),
+          Icon(Icons.error_outline, color: AppTheme.glowRed(context), size: 48),
           const SizedBox(height: 16),
           Text(
             _errorMessage ?? '未知错误',
-            style: const TextStyle(color: TechColors.textSecondary),
+            style: TextStyle(color: AppTheme.textSecondary(context)),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _fetchData,
             style: ElevatedButton.styleFrom(
-              backgroundColor: TechColors.glowOrange.withOpacity(0.2),
+              backgroundColor: AppTheme.glowOrange(context).withOpacity(0.2),
             ),
-            child: const Text('重试',
-                style: TextStyle(color: TechColors.glowOrange)),
+            child: Text('重试',
+                style: TextStyle(color: AppTheme.glowOrange(context))),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDeviceGrid() {
+  Widget _buildDeviceGrid(BuildContext context) {
     final devices = _response?.devices ?? [];
 
     if (devices.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           '暂无设备数据',
-          style: TextStyle(color: TechColors.textSecondary, fontSize: 11),
+          style:
+              TextStyle(color: AppTheme.textSecondary(context), fontSize: 11),
         ),
       );
     }
@@ -297,24 +305,27 @@ class Db41StatusPageState extends State<Db41StatusPage> {
           childAspectRatio: 3.8,
         ),
         itemCount: devices.length,
-        itemBuilder: (context, index) => _buildDeviceCard(devices[index], index),
+        itemBuilder: (context, index) =>
+            _buildDeviceCard(context, devices[index], index),
       ),
     );
   }
 
-  Widget _buildDeviceCard(Db41DeviceStatus device, int index) {
+  Widget _buildDeviceCard(
+      BuildContext context, Db41DeviceStatus device, int index) {
     final hasError = !device.isNormal;
-    final accentColor = hasError ? TechColors.glowRed : TechColors.glowGreen;
+    final accentColor =
+        hasError ? AppTheme.glowRed(context) : AppTheme.glowGreen(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.4),
+        color: AppTheme.bgMedium(context).withOpacity(0.4),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: hasError
-              ? TechColors.glowRed.withOpacity(0.3)
-              : TechColors.borderDark.withOpacity(0.2),
+              ? AppTheme.glowRed(context).withOpacity(0.3)
+              : AppTheme.borderDark(context).withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -324,8 +335,8 @@ class Db41StatusPageState extends State<Db41StatusPage> {
             width: 20,
             child: Text(
               '${index + 1}',
-              style: const TextStyle(
-                color: TechColors.textSecondary,
+              style: TextStyle(
+                color: AppTheme.textSecondary(context),
                 fontSize: 10,
                 fontFamily: 'Roboto Mono',
               ),
@@ -352,8 +363,8 @@ class Db41StatusPageState extends State<Db41StatusPage> {
           Expanded(
             child: Text(
               device.deviceName,
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 11,
                 fontFamily: 'Roboto Mono',
               ),
@@ -362,10 +373,12 @@ class Db41StatusPageState extends State<Db41StatusPage> {
             ),
           ),
           // E (Error)
-          _buildValueBadge('E', device.error ? '1' : '0', device.error),
+          _buildValueBadge(
+              context, 'E', device.error ? '1' : '0', device.error),
           const SizedBox(width: 4),
           // S (Status - 十六进制)
           _buildValueBadge(
+            context,
             'S',
             device.status.toRadixString(16).toUpperCase().padLeft(4, '0'),
             device.status != 0,
@@ -376,23 +389,25 @@ class Db41StatusPageState extends State<Db41StatusPage> {
   }
 
   /// 通用值徽章 (与磨料车间样式一致)
-  Widget _buildValueBadge(String label, String value, bool isError) {
-    final color = isError ? TechColors.glowRed : TechColors.textSecondary;
+  Widget _buildValueBadge(
+      BuildContext context, String label, String value, bool isError) {
+    final color =
+        isError ? AppTheme.glowRed(context) : AppTheme.textSecondary(context);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '$label:',
-          style: const TextStyle(color: TechColors.textSecondary, fontSize: 9),
+          style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 9),
         ),
         const SizedBox(width: 2),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           decoration: BoxDecoration(
             color: isError
-                ? TechColors.glowRed.withOpacity(0.2)
-                : TechColors.bgMedium.withOpacity(0.3),
+                ? AppTheme.glowRed(context).withOpacity(0.2)
+                : AppTheme.bgMedium(context).withOpacity(0.3),
             borderRadius: BorderRadius.circular(2),
           ),
           child: Text(

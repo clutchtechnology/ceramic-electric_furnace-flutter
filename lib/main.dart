@@ -2,21 +2,48 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/home.dart';
 import 'models/app_state.dart';
 import 'api/index.dart';
 import 'api/valve_api.dart';
 import 'api/status_service.dart';
 import 'providers/realtime_config_provider.dart';
+import 'theme/app_theme.dart';
 
 // 全局配置 Provider 实例
 final realtimeConfigProvider = RealtimeConfigProvider();
+
+// 主题状态管理
+class ThemeManager {
+  static const String _themeKey = 'app_theme_mode';
+  static ThemeMode _currentThemeMode = ThemeMode.dark;
+
+  static Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDark = prefs.getBool(_themeKey) ?? true;
+    _currentThemeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+  }
+
+  static ThemeMode get currentThemeMode => _currentThemeMode;
+
+  static Future<void> setThemeMode(ThemeMode mode) async {
+    _currentThemeMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_themeKey, mode == ThemeMode.dark);
+  }
+
+  static bool isDarkMode() => _currentThemeMode == ThemeMode.dark;
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 初始化全局状态管理
   await AppState.initialize();
+
+  // 初始化主题配置
+  await ThemeManager.init();
 
   // 初始化配置 Provider (加载持久化配置)
   await realtimeConfigProvider.loadConfig();
@@ -51,87 +78,17 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-/// [CRITICAL] 使用 WidgetsBindingObserver 监听应用生命周期
-/// Windows 桌面应用关闭时，进程可能被直接杀死，dispose() 可能不会执行
-/// 因此需要在 didChangeAppLifecycleState 中清理资源
-/// 
-/// [CRITICAL] 使用 WindowListener 监听窗口事件
-/// 当窗口从最小化恢复时，自动设置为全屏模式
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver, WindowListener {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // 添加窗口事件监听器
-    windowManager.addListener(this);
-  }
-
-  /// 窗口从最小化恢复时自动全屏
-  @override
-  void onWindowRestore() {
-    debugPrint('[MyApp] 窗口恢复，设置全屏模式');
-    windowManager.setFullScreen(true);
-  }
-
-  /// 窗口获得焦点时确保全屏
-  @override
-  void onWindowFocus() {
-    // 延迟检查，确保窗口状态稳定后再设置全屏
-    Future.delayed(const Duration(milliseconds: 100), () async {
-      final isFullScreen = await windowManager.isFullScreen();
-      final isMinimized = await windowManager.isMinimized();
-      if (!isFullScreen && !isMinimized) {
-        debugPrint('[MyApp] 窗口获得焦点但非全屏，恢复全屏模式');
-        await windowManager.setFullScreen(true);
-      }
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 预缓存电炉图片，确保打开页面时立即显示
-    precacheImage(const AssetImage('assets/images/furnace.png'), context);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    // Windows 应用进入后台或被关闭时清理资源
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      _cleanupResources();
-    }
-  }
-
-  /// 清理所有网络资源
-  void _cleanupResources() {
-    debugPrint('[MyApp] 正在清理网络资源...');
-    try {
-      // 释放所有 HTTP Client
-      ApiClient.dispose();
-      ValveApi().dispose();
-      StatusService().dispose();
-      debugPrint('[MyApp] 网络资源清理完成');
-    } catch (e) {
-      debugPrint('[MyApp] 清理资源时发生错误: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    windowManager.removeListener(this); // 移除窗口监听器
-    _cleanupResources();
-    super.dispose();
-  }
+/// 主题状态管理
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeManager.currentThemeMode;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '3号电炉系统',
-      theme: ThemeData.dark(),
-      themeMode: ThemeMode.dark,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: _themeMode,
       home: const DigitalTwinPage(),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
@@ -144,5 +101,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver, WindowListen
       ],
       locale: const Locale('zh', 'CN'),
     );
+  }
+
+  /// 切换主题
+  void _toggleTheme() {
+    setState(() {
+      _themeMode =
+          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+    ThemeManager.setThemeMode(_themeMode);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 预缓存电炉图片，确保打开页面时立即显示
+    precacheImage(const AssetImage('assets/images/furnace.png'), context);
   }
 }

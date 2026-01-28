@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../widgets/common/tech_line_widgets.dart';
+
 import '../api/status_service.dart';
 import '../models/status_model.dart';
+import '../theme/app_theme.dart';
 
 /// 设备状态页面 (合并 DB30 + DB41)
 /// 参考磨料车间的紧凑设计，使用垂直分区布局
@@ -161,7 +162,7 @@ class StatusPageState extends State<StatusPage> {
           // 部分成功也保存数据
           if (db30Result.success) _db30Response = db30Result;
           if (db41Result.success) _db41Response = db41Result;
-          
+
           // 记录错误
           final errors = <String>[];
           if (!db30Result.success) errors.add('DB30: ${db30Result.message}');
@@ -192,12 +193,14 @@ class StatusPageState extends State<StatusPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TechColors.bgDeep,
+      backgroundColor: AppTheme.bgDeep(context),
       body: Column(
         children: [
           _buildHeader(),
           Expanded(
-            child: _errorMessage != null && _db30Response == null && _db41Response == null
+            child: _errorMessage != null &&
+                    _db30Response == null &&
+                    _db41Response == null
                 ? _buildErrorWidget()
                 : _buildVerticalLayout(),
           ),
@@ -218,9 +221,9 @@ class StatusPageState extends State<StatusPage> {
           Expanded(
             flex: 1,
             child: _buildDbSection(
-              'DB30 Modbus 通信状态',
+              'DB30',
               db30Devices,
-              TechColors.glowCyan,
+              AppTheme.glowCyan(context),
               isDb30: true,
             ),
           ),
@@ -228,9 +231,9 @@ class StatusPageState extends State<StatusPage> {
           Expanded(
             flex: 1,
             child: _buildDbSection(
-              'DB41 传感器数据状态',
+              'DB41 ',
               db41Devices,
-              TechColors.glowOrange,
+              AppTheme.glowOrange(context),
               isDb30: false,
             ),
           ),
@@ -259,13 +262,14 @@ class StatusPageState extends State<StatusPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: TechColors.bgDark.withOpacity(0.5),
+        color: AppTheme.bgDark(context).withOpacity(0.5),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: accentColor.withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          _buildSectionHeader(title, normalCount, statusList.length, accentColor),
+          _buildSectionHeader(
+              title, normalCount, statusList.length, accentColor),
           Expanded(
             child: statusList.isEmpty
                 ? _buildEmptyHint()
@@ -330,7 +334,7 @@ class StatusPageState extends State<StatusPage> {
       child: Text(
         '暂无数据',
         style: TextStyle(
-          color: TechColors.textSecondary.withOpacity(0.5),
+          color: AppTheme.textSecondary(context).withOpacity(0.5),
           fontSize: 11,
         ),
       ),
@@ -355,8 +359,10 @@ class StatusPageState extends State<StatusPage> {
               children: [
                 for (int i = startIndex; i < endIndex; i++)
                   isDb30
-                      ? _buildDb30StatusCard(statusList[i] as Db30DeviceStatus, i)
-                      : _buildDb41StatusCard(statusList[i] as Db41DeviceStatus, i),
+                      ? _buildDb30StatusCard(
+                          statusList[i] as Db30DeviceStatus, i)
+                      : _buildDb41StatusCard(
+                          statusList[i] as Db41DeviceStatus, i),
               ],
             ),
           );
@@ -376,42 +382,44 @@ class StatusPageState extends State<StatusPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: TechColors.bgDark,
+        color: AppTheme.bgDark(context),
         border: Border(
-          bottom: BorderSide(color: TechColors.borderDark.withOpacity(0.5)),
+          bottom:
+              BorderSide(color: AppTheme.borderDark(context).withOpacity(0.5)),
         ),
       ),
       child: Row(
         children: [
-          const Text(
+          Text(
             '设备状态监控',
             style: TextStyle(
-              color: TechColors.textPrimary,
+              color: AppTheme.textPrimary(context),
               fontSize: 18,
               fontWeight: FontWeight.bold,
               fontFamily: 'Roboto Mono',
             ),
           ),
           const Spacer(),
-          _buildStatChip('总计', total, TechColors.glowCyan),
+          _buildStatChip('总计', total, AppTheme.glowCyan(context)),
           const SizedBox(width: 10),
-          _buildStatChip('正常', totalNormal, TechColors.glowGreen),
+          _buildStatChip('正常', totalNormal, AppTheme.glowGreen(context)),
           const SizedBox(width: 10),
-          _buildStatChip('异常', totalError, TechColors.glowRed),
+          _buildStatChip('异常', totalError, AppTheme.glowRed(context)),
           const SizedBox(width: 12),
           // 刷新按钮
           IconButton(
             onPressed: _isRefreshing ? null : _fetchData,
             icon: _isRefreshing
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: TechColors.glowCyan,
+                      color: AppTheme.glowCyan(context),
                     ),
                   )
-                : const Icon(Icons.refresh, color: TechColors.glowCyan, size: 20),
+                : Icon(Icons.refresh,
+                    color: AppTheme.glowCyan(context), size: 20),
           ),
         ],
       ),
@@ -452,18 +460,19 @@ class StatusPageState extends State<StatusPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: TechColors.glowRed, size: 48),
+          Icon(Icons.error_outline, color: AppTheme.glowRed(context), size: 48),
           const SizedBox(height: 16),
           Text(
             _errorMessage ?? '未知错误',
-            style: const TextStyle(color: TechColors.textSecondary, fontSize: 14),
+            style:
+                TextStyle(color: AppTheme.textSecondary(context), fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _fetchData,
             style: ElevatedButton.styleFrom(
-              backgroundColor: TechColors.glowCyan.withOpacity(0.2),
+              backgroundColor: AppTheme.glowCyan(context).withOpacity(0.2),
             ),
             child: const Text('重试'),
           ),
@@ -475,18 +484,19 @@ class StatusPageState extends State<StatusPage> {
   /// DB30 单个状态卡片
   Widget _buildDb30StatusCard(Db30DeviceStatus device, int index) {
     final hasError = !device.isNormal;
-    final accentColor = hasError ? TechColors.glowRed : TechColors.glowGreen;
+    final accentColor =
+        hasError ? AppTheme.glowRed(context) : AppTheme.glowGreen(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 3),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.4),
+        color: AppTheme.bgMedium(context).withOpacity(0.4),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: hasError
-              ? TechColors.glowRed.withOpacity(0.3)
-              : TechColors.borderDark.withOpacity(0.2),
+              ? AppTheme.glowRed(context).withOpacity(0.3)
+              : AppTheme.borderDark(context).withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -496,8 +506,8 @@ class StatusPageState extends State<StatusPage> {
             width: 20,
             child: Text(
               '${index + 1}',
-              style: const TextStyle(
-                color: TechColors.textSecondary,
+              style: TextStyle(
+                color: AppTheme.textSecondary(context),
                 fontSize: 10,
                 fontFamily: 'Roboto Mono',
               ),
@@ -524,8 +534,8 @@ class StatusPageState extends State<StatusPage> {
           Expanded(
             child: Text(
               device.deviceName,
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 11,
                 fontFamily: 'Roboto Mono',
               ),
@@ -534,20 +544,23 @@ class StatusPageState extends State<StatusPage> {
             ),
           ),
           // D (Done)
-          _buildValueBadge('D', device.done ? '1' : '0', device.done, TechColors.glowGreen),
+          _buildValueBadge('D', device.done ? '1' : '0', device.done,
+              AppTheme.glowGreen(context)),
           const SizedBox(width: 3),
           // B (Busy)
-          _buildValueBadge('B', device.busy ? '1' : '0', device.busy, TechColors.glowOrange),
+          _buildValueBadge('B', device.busy ? '1' : '0', device.busy,
+              AppTheme.glowOrange(context)),
           const SizedBox(width: 3),
           // E (Error)
-          _buildValueBadge('E', device.error ? '1' : '0', device.error, TechColors.glowRed),
+          _buildValueBadge('E', device.error ? '1' : '0', device.error,
+              AppTheme.glowRed(context)),
           const SizedBox(width: 3),
           // S (Status)
           _buildValueBadge(
             'S',
             device.status.toRadixString(16).toUpperCase().padLeft(4, '0'),
             device.status != 0,
-            TechColors.glowCyan,
+            AppTheme.glowCyan(context),
           ),
         ],
       ),
@@ -557,18 +570,19 @@ class StatusPageState extends State<StatusPage> {
   /// DB41 单个状态卡片
   Widget _buildDb41StatusCard(Db41DeviceStatus device, int index) {
     final hasError = !device.isNormal;
-    final accentColor = hasError ? TechColors.glowRed : TechColors.glowGreen;
+    final accentColor =
+        hasError ? AppTheme.glowRed(context) : AppTheme.glowGreen(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 3),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.4),
+        color: AppTheme.bgMedium(context).withOpacity(0.4),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: hasError
-              ? TechColors.glowRed.withOpacity(0.3)
-              : TechColors.borderDark.withOpacity(0.2),
+              ? AppTheme.glowRed(context).withOpacity(0.3)
+              : AppTheme.borderDark(context).withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -578,8 +592,8 @@ class StatusPageState extends State<StatusPage> {
             width: 20,
             child: Text(
               '${index + 1}',
-              style: const TextStyle(
-                color: TechColors.textSecondary,
+              style: TextStyle(
+                color: AppTheme.textSecondary(context),
                 fontSize: 10,
                 fontFamily: 'Roboto Mono',
               ),
@@ -606,8 +620,8 @@ class StatusPageState extends State<StatusPage> {
           Expanded(
             child: Text(
               device.deviceName,
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 11,
                 fontFamily: 'Roboto Mono',
               ),
@@ -616,14 +630,15 @@ class StatusPageState extends State<StatusPage> {
             ),
           ),
           // E (Error)
-          _buildValueBadge('E', device.error ? '1' : '0', device.error, TechColors.glowRed),
+          _buildValueBadge('E', device.error ? '1' : '0', device.error,
+              AppTheme.glowRed(context)),
           const SizedBox(width: 3),
           // S (Status)
           _buildValueBadge(
             'S',
             device.status.toRadixString(16).toUpperCase().padLeft(4, '0'),
             device.status != 0,
-            TechColors.glowOrange,
+            AppTheme.glowOrange(context),
           ),
         ],
       ),
@@ -631,15 +646,16 @@ class StatusPageState extends State<StatusPage> {
   }
 
   /// 通用值徽章
-  Widget _buildValueBadge(String label, String value, bool isActive, Color activeColor) {
-    final color = isActive ? activeColor : TechColors.textSecondary;
+  Widget _buildValueBadge(
+      String label, String value, bool isActive, Color activeColor) {
+    final color = isActive ? activeColor : AppTheme.textSecondary(context);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '$label:',
-          style: const TextStyle(color: TechColors.textSecondary, fontSize: 9),
+          style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 9),
         ),
         const SizedBox(width: 2),
         Container(
@@ -647,7 +663,7 @@ class StatusPageState extends State<StatusPage> {
           decoration: BoxDecoration(
             color: isActive
                 ? activeColor.withOpacity(0.2)
-                : TechColors.bgMedium.withOpacity(0.3),
+                : AppTheme.bgMedium(context).withOpacity(0.3),
             borderRadius: BorderRadius.circular(2),
           ),
           child: Text(

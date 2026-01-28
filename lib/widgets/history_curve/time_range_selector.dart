@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 时间范围选择器组件
 /// 包含起止时间选择功能
@@ -10,8 +11,8 @@ class TimeRangeSelector extends StatefulWidget {
   const TimeRangeSelector({
     super.key,
     this.onTimeRangeChanged,
-    this.accentColor = TechColors.glowCyan,
-  });
+    Color? accentColor,
+  }) : accentColor = accentColor ?? const Color(0xFF00d4ff);
 
   @override
   State<TimeRangeSelector> createState() => _TimeRangeSelectorState();
@@ -35,7 +36,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
           child: Text(
             '-',
             style: TextStyle(
-              color: TechColors.textSecondary,
+              color: AppTheme.textSecondary(context),
               fontSize: 11,
             ),
           ),
@@ -72,7 +73,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
         child: Text(
           timeStr,
           style: TextStyle(
-            color: TechColors.textPrimary,
+            color: AppTheme.textPrimary(context),
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
@@ -96,10 +97,10 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
             colorScheme: ColorScheme.dark(
               primary: widget.accentColor,
               onPrimary: Colors.white,
-              surface: TechColors.bgDark,
-              onSurface: TechColors.textPrimary,
+              surface: AppTheme.bgDark(context),
+              onSurface: AppTheme.textPrimary(context),
             ),
-            dialogBackgroundColor: TechColors.bgMedium,
+            dialogBackgroundColor: AppTheme.bgMedium(context),
           ),
           child: child!,
         );
@@ -120,10 +121,10 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
             colorScheme: ColorScheme.dark(
               primary: widget.accentColor,
               onPrimary: Colors.white,
-              surface: TechColors.bgDark,
-              onSurface: TechColors.textPrimary,
+              surface: AppTheme.bgDark(context),
+              onSurface: AppTheme.textPrimary(context),
             ),
-            dialogBackgroundColor: TechColors.bgMedium,
+            dialogBackgroundColor: AppTheme.bgMedium(context),
           ),
           child: child!,
         );

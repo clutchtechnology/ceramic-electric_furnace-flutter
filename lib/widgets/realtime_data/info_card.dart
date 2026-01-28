@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 信息卡片组件
 /// 用于显示单个或多个数据项的卡片
@@ -18,7 +19,7 @@ class InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.95),
+        color: AppTheme.bgMedium(context).withOpacity(0.95),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: accentColor.withOpacity(0.5),
@@ -33,13 +34,13 @@ class InfoCard extends StatelessWidget {
         ],
       ),
       child: items.length == 1 && items[0].layout == InfoCardLayout.vertical
-          ? _buildVerticalLayout(items[0])
-          : _buildHorizontalLayout(items),
+          ? _buildVerticalLayout(context, items[0])
+          : _buildHorizontalLayout(context, items),
     );
   }
 
   /// 垂直布局（用于单个数据项，如温度、PM10）
-  Widget _buildVerticalLayout(InfoCardItem item) {
+  Widget _buildVerticalLayout(BuildContext context, InfoCardItem item) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -56,7 +57,7 @@ class InfoCard extends StatelessWidget {
             Text(
               item.label,
               style: TextStyle(
-                color: TechColors.textSecondary,
+                color: AppTheme.textSecondary(context),
                 fontSize: 15,
               ),
             ),
@@ -74,7 +75,8 @@ class InfoCard extends StatelessWidget {
                     fontFamily: 'Roboto Mono',
                     shadows: [
                       Shadow(
-                        color: (item.valueColor ?? accentColor).withOpacity(0.5),
+                        color:
+                            (item.valueColor ?? accentColor).withOpacity(0.5),
                         blurRadius: 8,
                       ),
                     ],
@@ -84,7 +86,7 @@ class InfoCard extends StatelessWidget {
                 Text(
                   item.unit,
                   style: TextStyle(
-                    color: TechColors.textSecondary,
+                    color: AppTheme.textSecondary(context),
                     fontSize: 16,
                   ),
                 ),
@@ -96,7 +98,7 @@ class InfoCard extends StatelessWidget {
           const SizedBox(width: 8),
           Icon(
             Icons.warning,
-            color: TechColors.statusAlarm,
+            color: AppTheme.statusAlarm(context),
             size: 24,
           ),
         ],
@@ -105,7 +107,8 @@ class InfoCard extends StatelessWidget {
   }
 
   /// 水平布局（用于多行数据项，如功率+能耗）
-  Widget _buildHorizontalLayout(List<InfoCardItem> items) {
+  Widget _buildHorizontalLayout(
+      BuildContext context, List<InfoCardItem> items) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,7 +126,7 @@ class InfoCard extends StatelessWidget {
               Text(
                 items[i].label,
                 style: TextStyle(
-                  color: TechColors.textSecondary,
+                  color: AppTheme.textSecondary(context),
                   fontSize: 15,
                 ),
               ),
@@ -137,7 +140,8 @@ class InfoCard extends StatelessWidget {
                   fontFamily: 'Roboto Mono',
                   shadows: [
                     Shadow(
-                      color: (items[i].valueColor ?? accentColor).withOpacity(0.5),
+                      color:
+                          (items[i].valueColor ?? accentColor).withOpacity(0.5),
                       blurRadius: 8,
                     ),
                   ],
@@ -147,7 +151,7 @@ class InfoCard extends StatelessWidget {
               Text(
                 items[i].unit,
                 style: TextStyle(
-                  color: TechColors.textSecondary,
+                  color: AppTheme.textSecondary(context),
                   fontSize: 15,
                 ),
               ),
@@ -155,7 +159,7 @@ class InfoCard extends StatelessWidget {
           ),
           if (i < items.length - 1) ...[
             const SizedBox(height: 8),
-            Divider(height: 1, color: TechColors.borderDark),
+            Divider(height: 1, color: AppTheme.borderDark(context)),
             const SizedBox(height: 8),
           ],
         ],
@@ -189,6 +193,6 @@ class InfoCardItem {
 
 /// 信息卡片布局类型
 enum InfoCardLayout {
-  vertical,   // 垂直布局（图标在左，标签+数值在右）
+  vertical, // 垂直布局（图标在左，标签+数值在右）
   horizontal, // 水平布局（图标+标签+数值在一行）
 }

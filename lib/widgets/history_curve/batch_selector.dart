@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 批次号选择器组件
 /// 用于选择历史数据的批次号筛选
@@ -30,7 +31,7 @@ class _BatchSelectorState extends State<BatchSelector> {
 
     return PopupMenuButton<String?>(
       tooltip: '选择批次号',
-      color: TechColors.bgMedium,
+      color: AppTheme.bgMedium(context),
       offset: const Offset(0, 32),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: widget.accentColor.withOpacity(0.5)),
@@ -44,7 +45,7 @@ class _BatchSelectorState extends State<BatchSelector> {
         height: 26,
         padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          color: TechColors.bgLight.withOpacity(0.3),
+          color: AppTheme.bgLight(context).withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: widget.accentColor.withOpacity(0.5)),
         ),
@@ -66,8 +67,8 @@ class _BatchSelectorState extends State<BatchSelector> {
               constraints: const BoxConstraints(maxWidth: 70),
               child: Text(
                 displayText,
-                style: const TextStyle(
-                  color: TechColors.textPrimary,
+                style: TextStyle(
+                  color: AppTheme.textPrimary(context),
                   fontSize: 11,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -93,7 +94,7 @@ class _BatchSelectorState extends State<BatchSelector> {
                 size: 16,
                 color: widget.selectedBatch == null
                     ? widget.accentColor
-                    : TechColors.textSecondary,
+                    : AppTheme.textSecondary(context),
               ),
               const SizedBox(width: 8),
               Text(
@@ -101,7 +102,7 @@ class _BatchSelectorState extends State<BatchSelector> {
                 style: TextStyle(
                   color: widget.selectedBatch == null
                       ? widget.accentColor
-                      : TechColors.textSecondary,
+                      : AppTheme.textSecondary(context),
                   fontSize: 12,
                   fontWeight: widget.selectedBatch == null
                       ? FontWeight.bold
@@ -132,7 +133,7 @@ class _BatchSelectorState extends State<BatchSelector> {
                   size: 16,
                   color: isSelected
                       ? widget.accentColor
-                      : TechColors.textSecondary,
+                      : AppTheme.textSecondary(context),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -141,7 +142,7 @@ class _BatchSelectorState extends State<BatchSelector> {
                     style: TextStyle(
                       color: isSelected
                           ? widget.accentColor
-                          : TechColors.textSecondary,
+                          : AppTheme.textSecondary(context),
                       fontSize: 12,
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
@@ -156,13 +157,13 @@ class _BatchSelectorState extends State<BatchSelector> {
 
         // 如果没有批次号，显示提示
         if (widget.batchCodes.isEmpty) {
-          items.add(const PopupMenuItem<String?>(
+          items.add(PopupMenuItem<String?>(
             enabled: false,
             height: 32,
             child: Text(
               '暂无批次数据',
               style: TextStyle(
-                color: TechColors.textSecondary,
+                color: AppTheme.textSecondary(context),
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
               ),

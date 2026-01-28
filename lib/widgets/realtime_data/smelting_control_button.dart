@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 冶炼控制按钮组件
 class SmeltingControlButton extends StatefulWidget {
@@ -70,17 +71,20 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.95),
+        color: AppTheme.bgMedium(context).withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
+          color: widget.isSmelting
+              ? AppTheme.statusNormal(context)
+              : AppTheme.glowOrange(context),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                (widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
-                    .withOpacity(0.2),
+            color: (widget.isSmelting
+                    ? AppTheme.statusNormal(context)
+                    : AppTheme.glowOrange(context))
+                .withOpacity(0.2),
             blurRadius: 12,
             spreadRadius: 1,
           ),
@@ -92,15 +96,17 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color:
-                  (widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange)
-                      .withOpacity(0.2),
+              color: (widget.isSmelting
+                      ? AppTheme.statusNormal(context)
+                      : AppTheme.glowOrange(context))
+                  .withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
               widget.isSmelting ? Icons.science : Icons.play_circle_filled,
-              color:
-                  widget.isSmelting ? TechColors.statusNormal : TechColors.glowOrange,
+              color: widget.isSmelting
+                  ? AppTheme.statusNormal(context)
+                  : AppTheme.glowOrange(context),
               size: 32,
             ),
           ),
@@ -110,10 +116,10 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   '冶炼运行中',
                   style: TextStyle(
-                    color: TechColors.statusNormal,
+                    color: AppTheme.statusNormal(context),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -122,7 +128,7 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
                 Text(
                   '轮次编码：${widget.smeltingCode}',
                   style: TextStyle(
-                    color: TechColors.textSecondary,
+                    color: AppTheme.textSecondary(context),
                     fontSize: 15,
                     fontFamily: 'Roboto Mono',
                   ),
@@ -142,14 +148,14 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        TechColors.statusAlarm,
-                        TechColors.statusAlarm.withOpacity(0.8),
+                        AppTheme.statusAlarm(context),
+                        AppTheme.statusAlarm(context).withOpacity(0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
-                        color: TechColors.statusAlarm.withOpacity(0.3),
+                        color: AppTheme.statusAlarm(context).withOpacity(0.3),
                         blurRadius: 8,
                         spreadRadius: 0,
                       ),
@@ -209,8 +215,8 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
                   widget.isSystemReady ? '系统就绪' : '系统未就绪',
                   style: TextStyle(
                     color: widget.isSystemReady
-                        ? TechColors.statusNormal
-                        : TechColors.statusWarning,
+                        ? AppTheme.statusNormal(context)
+                        : AppTheme.statusWarning(context),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -219,7 +225,7 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
                 Text(
                   widget.isSystemReady ? '等待开始冶炼...' : '等待后端连接...',
                   style: TextStyle(
-                    color: TechColors.textSecondary,
+                    color: AppTheme.textSecondary(context),
                     fontSize: 14,
                   ),
                 ),
@@ -241,11 +247,11 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
                       gradient: LinearGradient(
                         colors: [
                           widget.isSystemReady
-                              ? TechColors.statusNormal
-                              : TechColors.statusOffline,
+                              ? AppTheme.statusNormal(context)
+                              : AppTheme.statusOffline(context),
                           (widget.isSystemReady
-                                  ? TechColors.statusNormal
-                                  : TechColors.statusOffline)
+                                  ? AppTheme.statusNormal(context)
+                                  : AppTheme.statusOffline(context))
                               .withOpacity(0.8),
                         ],
                       ),
@@ -253,7 +259,8 @@ class _SmeltingControlButtonState extends State<SmeltingControlButton> {
                       boxShadow: widget.isSystemReady
                           ? [
                               BoxShadow(
-                                color: TechColors.statusNormal.withOpacity(0.3),
+                                color: AppTheme.statusNormal(context)
+                                    .withOpacity(0.3),
                                 blurRadius: 8,
                                 spreadRadius: 0,
                               ),

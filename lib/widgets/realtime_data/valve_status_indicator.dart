@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import '../common/tech_line_widgets.dart';
 import '../../tools/valve_calculator.dart';
+import '../../theme/app_theme.dart';
 
 class ValveStatusIndicator extends StatelessWidget {
   final int valveId; // 蝶阀编号 (1-4)
@@ -24,10 +25,10 @@ class ValveStatusIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.5),
+        color: AppTheme.bgMedium(context).withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: TechColors.borderDark,
+          color: AppTheme.borderDark(context),
           width: 1,
         ),
       ),
@@ -44,8 +45,8 @@ class ValveStatusIndicator extends StatelessWidget {
                   flex: 2,
                   child: Text(
                     '$valveId#',
-                    style: const TextStyle(
-                      color: TechColors.textPrimary,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary(context),
                       fontSize: 19,
                       fontWeight: FontWeight.bold,
                       height: 1.0,
@@ -65,7 +66,8 @@ class ValveStatusIndicator extends StatelessWidget {
                         fontFamily: 'Roboto Mono',
                         shadows: [
                           Shadow(
-                            color: _getProgressColor(openPercentage).withOpacity(0.5),
+                            color: _getProgressColor(openPercentage)
+                                .withOpacity(0.5),
                             blurRadius: 8,
                           ),
                         ],
@@ -76,7 +78,7 @@ class ValveStatusIndicator extends StatelessWidget {
                 // 右侧：状态显示
                 Expanded(
                   flex: 4,
-                  child: _buildStatusButtons(),
+                  child: _buildStatusButtons(context),
                 ),
               ],
             ),
@@ -85,7 +87,7 @@ class ValveStatusIndicator extends StatelessWidget {
           // 下部分：进度条
           Expanded(
             flex: 2,
-            child: _buildProgressBar(),
+            child: _buildProgressBar(context),
           ),
         ],
       ),
@@ -104,43 +106,48 @@ class ValveStatusIndicator extends StatelessWidget {
   }
 
   /// 构建状态显示组 (关/停/开)
-  Widget _buildStatusButtons() {
+  Widget _buildStatusButtons(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildStatusButton('关', '10', currentStatus == '10'),
+        _buildStatusButton(context, '关', '10', currentStatus == '10'),
         const SizedBox(width: 3),
         _buildStatusButton(
-            '停', '00', currentStatus == '00' || currentStatus == '11'),
+            context, '停', '00', currentStatus == '00' || currentStatus == '11'),
         const SizedBox(width: 3),
-        _buildStatusButton('开', '01', currentStatus == '01'),
+        _buildStatusButton(context, '开', '01', currentStatus == '01'),
       ],
     );
   }
 
   /// 构建单个状态显示器
-  Widget _buildStatusButton(String label, String statusCode, bool isActive) {
+  Widget _buildStatusButton(
+      BuildContext context, String label, String statusCode, bool isActive) {
     Color buttonColor;
     if (isActive) {
       if (statusCode == '01') {
-        buttonColor = TechColors.glowGreen;
+        buttonColor = AppTheme.glowGreen(context);
       } else if (statusCode == '10') {
-        buttonColor = TechColors.glowRed;
+        buttonColor = AppTheme.glowRed(context);
       } else {
-        buttonColor = TechColors.glowCyan;
+        buttonColor = AppTheme.borderGlow(context);
       }
     } else {
-      buttonColor = TechColors.textSecondary.withOpacity(0.3);
+      buttonColor = AppTheme.textSecondary(context).withOpacity(0.3);
     }
 
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: isActive ? buttonColor.withOpacity(0.15) : TechColors.bgDeep.withOpacity(0.3),
+          color: isActive
+              ? buttonColor.withOpacity(0.15)
+              : AppTheme.bgDeep(context).withOpacity(0.3),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: isActive ? buttonColor : TechColors.borderDark.withOpacity(0.5),
+            color: isActive
+                ? buttonColor
+                : AppTheme.borderDark(context).withOpacity(0.5),
             width: isActive ? 1.5 : 0.5,
           ),
         ),
@@ -159,7 +166,7 @@ class ValveStatusIndicator extends StatelessWidget {
   }
 
   /// 构建进度条
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(BuildContext context) {
     return Column(
       children: [
         // 进度条
@@ -168,17 +175,17 @@ class ValveStatusIndicator extends StatelessWidget {
             builder: (context, constraints) {
               final barWidth = constraints.maxWidth;
               final progressWidth = barWidth * (openPercentage / 100);
-              
+
               return Stack(
                 children: [
                   // 背景轨道
                   Container(
                     height: double.infinity,
                     decoration: BoxDecoration(
-                      color: TechColors.bgDark.withOpacity(0.8),
+                      color: AppTheme.bgDark(context).withOpacity(0.8),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: TechColors.borderDark,
+                        color: AppTheme.borderDark(context),
                         width: 1,
                       ),
                     ),
@@ -197,7 +204,8 @@ class ValveStatusIndicator extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: _getProgressColor(openPercentage).withOpacity(0.5),
+                          color: _getProgressColor(openPercentage)
+                              .withOpacity(0.5),
                           blurRadius: 8,
                         ),
                       ],
@@ -210,7 +218,7 @@ class ValveStatusIndicator extends StatelessWidget {
                     bottom: 0,
                     child: Container(
                       width: 2,
-                      color: TechColors.textSecondary.withOpacity(0.5),
+                      color: AppTheme.textSecondary(context).withOpacity(0.5),
                     ),
                   ),
                 ],
@@ -226,7 +234,7 @@ class ValveStatusIndicator extends StatelessWidget {
             Text(
               '全关',
               style: TextStyle(
-                color: TechColors.glowCyan,
+                color: AppTheme.borderGlow(context),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
@@ -234,7 +242,7 @@ class ValveStatusIndicator extends StatelessWidget {
             Text(
               '1/2',
               style: TextStyle(
-                color: TechColors.glowCyan,
+                color: AppTheme.borderGlow(context),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
@@ -242,7 +250,7 @@ class ValveStatusIndicator extends StatelessWidget {
             Text(
               '全开',
               style: TextStyle(
-                color: TechColors.glowCyan,
+                color: AppTheme.borderGlow(context),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),

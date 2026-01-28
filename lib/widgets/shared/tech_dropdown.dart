@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 科技风格下拉选择器组件
 class TechDropdown<T> extends StatefulWidget {
   final T value;
   final List<TechDropdownItem<T>> items;
   final ValueChanged<T?> onChanged;
-  final Color accentColor;
+  final Color? accentColor;
   final String? hint;
   final double width;
 
@@ -15,7 +16,7 @@ class TechDropdown<T> extends StatefulWidget {
     required this.value,
     required this.items,
     required this.onChanged,
-    this.accentColor = TechColors.glowCyan,
+    this.accentColor,
     this.hint,
     this.width = 150,
   });
@@ -29,6 +30,7 @@ class _TechDropdownState<T> extends State<TechDropdown<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = widget.accentColor ?? AppTheme.borderGlow(context);
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -38,13 +40,13 @@ class _TechDropdownState<T> extends State<TechDropdown<T>> {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: _isHovered
-              ? widget.accentColor.withOpacity(0.15)
-              : widget.accentColor.withOpacity(0.1),
+              ? accentColor.withOpacity(0.15)
+              : accentColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: _isHovered
-                ? widget.accentColor.withOpacity(0.6)
-                : widget.accentColor.withOpacity(0.3),
+                ? accentColor.withOpacity(0.6)
+                : accentColor.withOpacity(0.3),
             width: 1,
           ),
         ),
@@ -55,22 +57,22 @@ class _TechDropdownState<T> extends State<TechDropdown<T>> {
                 ? Text(
                     widget.hint!,
                     style: TextStyle(
-                      color: TechColors.textSecondary,
+                      color: AppTheme.textSecondary(context),
                       fontSize: 12,
                     ),
                   )
                 : null,
             icon: Icon(
               Icons.arrow_drop_down,
-              color: widget.accentColor,
+              color: accentColor,
               size: 20,
             ),
             style: TextStyle(
-              color: widget.accentColor,
+              color: accentColor,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
-            dropdownColor: TechColors.bgMedium,
+            dropdownColor: AppTheme.bgMedium(context),
             isExpanded: true,
             items: widget.items.map((item) {
               return DropdownMenuItem<T>(
@@ -78,14 +80,14 @@ class _TechDropdownState<T> extends State<TechDropdown<T>> {
                 child: Row(
                   children: [
                     if (item.icon != null) ...[
-                      Icon(item.icon, size: 16, color: widget.accentColor),
+                      Icon(item.icon, size: 16, color: accentColor),
                       const SizedBox(width: 6),
                     ],
                     Expanded(
                       child: Text(
                         item.label,
                         style: TextStyle(
-                          color: TechColors.textPrimary,
+                          color: AppTheme.textPrimary(context),
                           fontSize: 12,
                         ),
                         overflow: TextOverflow.ellipsis,

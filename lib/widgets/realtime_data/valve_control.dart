@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
 import '../../models/app_state.dart' show ValveStatus;
+import '../../theme/app_theme.dart';
+
+// 1: 蝶阀控制组件 - 显示蝶阀状态并支持远程开/停/关控制
 
 /// 蝶阀控制组件
 /// 显示蝶阀状态并支持远程开/停/关控制
@@ -9,9 +12,9 @@ class ValveControl extends StatelessWidget {
   final ValveStatus status;
   final double openingDegree;
   final ValueChanged<ValveStatus>? onChanged;
-  final Color openColor;
-  final Color closeColor;
-  final Color stopColor;
+  final Color? openColor;
+  final Color? closeColor;
+  final Color? stopColor;
 
   const ValveControl({
     super.key,
@@ -19,39 +22,43 @@ class ValveControl extends StatelessWidget {
     required this.status,
     this.openingDegree = 0,
     this.onChanged,
-    this.openColor = TechColors.glowGreen,
-    this.closeColor = TechColors.glowRed,
-    this.stopColor = TechColors.statusWarning,
+    this.openColor,
+    this.closeColor,
+    this.stopColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 逻辑判定
+    // 2: 为可选颜色参数提供默认值（使用 AppTheme）
+    final effectiveOpenColor = openColor ?? AppTheme.glowGreen(context);
+    final effectiveCloseColor = closeColor ?? AppTheme.glowRed(context);
+    final effectiveStopColor = stopColor ?? AppTheme.statusWarning(context);
+
+    // 3: 逻辑判定
     final bool isStopped = status == ValveStatus.stopped;
     final bool isFullyClosed = openingDegree == 0;
 
-    // 确定显示的颜色
+    // 4: 确定显示的颜色
     late final Color displayColor;
 
     if (!isStopped) {
       // 停没亮 -> 运行/调节中 -> 黄色
-      displayColor = TechColors.statusWarning;
+      displayColor = effectiveStopColor;
     } else {
       // 停亮了 -> 停止状态
       if (isFullyClosed) {
         // 开度为0 -> 关闭 -> 红色
-        displayColor = closeColor;
+        displayColor = effectiveCloseColor;
       } else {
         // 开度不为0 -> 开启 -> 绿色
-        displayColor = openColor;
+        displayColor = effectiveOpenColor;
       }
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 10, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.3),
+        color: AppTheme.bgMedium(context).withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: displayColor.withOpacity(0.5),
@@ -86,8 +93,8 @@ class ValveControl extends StatelessWidget {
               // 名称
               Text(
                 name,
-                style: const TextStyle(
-                  color: TechColors.textPrimary,
+                style: TextStyle(
+                  color: AppTheme.textPrimary(context),
                   fontSize: 17,
                   fontWeight: FontWeight.w500,
                 ),
@@ -105,25 +112,28 @@ class ValveControl extends StatelessWidget {
                   ),
                 ),
               ),
-              // 按钮组：开 | 关 | (空) | 停
+              // 5: 按钮组：开 | 关 | (空) | 停
               _buildControlButton(
+                context,
                 label: '开',
                 isActive: status == ValveStatus.open,
-                activeColor: openColor,
+                activeColor: effectiveOpenColor,
                 onTap: () => onChanged?.call(ValveStatus.open),
               ),
               const SizedBox(width: 4),
               _buildControlButton(
+                context,
                 label: '关',
                 isActive: status == ValveStatus.closed,
-                activeColor: closeColor,
+                activeColor: effectiveCloseColor,
                 onTap: () => onChanged?.call(ValveStatus.closed),
               ),
               const SizedBox(width: 12), // 空格
               _buildControlButton(
+                context,
                 label: '停',
                 isActive: status == ValveStatus.stopped,
-                activeColor: stopColor,
+                activeColor: effectiveStopColor,
                 onTap: () => onChanged?.call(ValveStatus.stopped),
               ),
             ],
@@ -134,7 +144,7 @@ class ValveControl extends StatelessWidget {
             borderRadius: BorderRadius.circular(4), // Slightly smaller radius
             child: LinearProgressIndicator(
               value: openingDegree / 100.0,
-              backgroundColor: TechColors.bgDark,
+              backgroundColor: AppTheme.bgDark(context),
               color: displayColor,
               minHeight: 8, // Reduced height (was 10/12)
             ),
@@ -144,7 +154,9 @@ class ValveControl extends StatelessWidget {
     );
   }
 
-  Widget _buildControlButton({
+  // 6: 构建控制按钮
+  Widget _buildControlButton(
+    BuildContext context, {
     required String label,
     required bool isActive,
     required Color activeColor,
@@ -155,10 +167,12 @@ class ValveControl extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? activeColor.withOpacity(0.2) : TechColors.bgDark,
+          color: isActive
+              ? activeColor.withOpacity(0.2)
+              : AppTheme.bgDark(context),
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: isActive ? activeColor : TechColors.borderDark,
+            color: isActive ? activeColor : AppTheme.borderDark(context),
           ),
           boxShadow: isActive
               ? [
@@ -172,7 +186,7 @@ class ValveControl extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: isActive ? activeColor : TechColors.textSecondary,
+            color: isActive ? activeColor : AppTheme.textSecondary(context),
             fontSize: 15,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           ),
@@ -182,8 +196,7 @@ class ValveControl extends StatelessWidget {
   }
 }
 
-/// 蝶阀控制面板
-/// 显示多个蝶阀的状态和控制
+// 7: 蝶阀控制面板 - 显示多个蝶阀的状态和控制
 class ValveControlPanel extends StatelessWidget {
   final List<ValveItem> valves;
   final ValueChanged<ValveItem>? onValveChanged;
@@ -224,7 +237,7 @@ class ValveControlPanel extends StatelessWidget {
   }
 }
 
-/// 蝶阀数据模型
+// 8: 蝶阀数据模型
 class ValveItem {
   final String id;
   final String name;

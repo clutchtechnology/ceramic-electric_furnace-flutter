@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import '../widgets/common/tech_line_widgets.dart';
 import '../widgets/shared/data_table.dart';
 import '../widgets/history_curve/time_range_selector.dart';
@@ -119,7 +120,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: TechColors.bgDeep,
+      color: AppTheme.bgDeep(context),
       child: Column(
         children: [
           // 第一行：2个面板
@@ -132,11 +133,11 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                     margin: const EdgeInsets.all(12),
                     child: TechPanel(
                       title: _panels[0].title,
-                      accentColor: TechColors.glowCyan,
+                      accentColor: AppTheme.glowCyan(context),
                       height: double.infinity,
                       headerActions: [
                         TimeRangeSelector(
-                          accentColor: TechColors.glowCyan,
+                          accentColor: AppTheme.glowCyan(context),
                           onTimeRangeChanged: (start, end) {
                             setState(() {
                               _coolingWaterStartTime = start;
@@ -147,7 +148,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         RefreshButton(
-                          accentColor: TechColors.glowCyan,
+                          accentColor: AppTheme.glowCyan(context),
                           onPressed: () {
                             setState(() {
                               // 刷新数据
@@ -156,7 +157,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         ExportButton(
-                          accentColor: TechColors.glowCyan,
+                          accentColor: AppTheme.glowCyan(context),
                           exportTitle: '炉皮冷却水',
                           columns: const ['日期', '时间', '流速', '水压'],
                           data: _coolingWaterData,
@@ -165,7 +166,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                       child: TechDataTable(
                         columns: const ['日期', '时间', '流速', '水压'],
                         data: _coolingWaterData,
-                        accentColor: TechColors.glowCyan,
+                        accentColor: AppTheme.glowCyan(context),
                       ),
                     ),
                   ),
@@ -176,11 +177,11 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                     margin: const EdgeInsets.fromLTRB(0, 12, 12, 12),
                     child: TechPanel(
                       title: _panels[1].title,
-                      accentColor: TechColors.glowBlue,
+                      accentColor: AppTheme.glowBlue(context),
                       height: double.infinity,
                       headerActions: [
                         TimeRangeSelector(
-                          accentColor: TechColors.glowBlue,
+                          accentColor: AppTheme.glowBlue(context),
                           onTimeRangeChanged: (start, end) {
                             setState(() {
                               _preFilterStartTime = start;
@@ -191,7 +192,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         RefreshButton(
-                          accentColor: TechColors.glowBlue,
+                          accentColor: AppTheme.glowBlue(context),
                           onPressed: () {
                             setState(() {
                               // 刷新数据
@@ -200,7 +201,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         ExportButton(
-                          accentColor: TechColors.glowBlue,
+                          accentColor: AppTheme.glowBlue(context),
                           exportTitle: '前置过滤器',
                           columns: const ['日期', '时间', '压差'],
                           data: _preFilterData,
@@ -209,7 +210,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                       child: TechDataTable(
                         columns: const ['日期', '时间', '压差'],
                         data: _preFilterData,
-                        accentColor: TechColors.glowBlue,
+                        accentColor: AppTheme.glowBlue(context),
                       ),
                     ),
                   ),
@@ -227,11 +228,11 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                     margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                     child: TechPanel(
                       title: _panels[2].title,
-                      accentColor: TechColors.glowGreen,
+                      accentColor: AppTheme.glowGreen(context),
                       height: double.infinity,
                       headerActions: [
                         TimeRangeSelector(
-                          accentColor: TechColors.glowGreen,
+                          accentColor: AppTheme.glowGreen(context),
                           onTimeRangeChanged: (start, end) {
                             setState(() {
                               _dustInletStartTime = start;
@@ -242,7 +243,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         RefreshButton(
-                          accentColor: TechColors.glowGreen,
+                          accentColor: AppTheme.glowGreen(context),
                           onPressed: () {
                             setState(() {
                               // 刷新数据
@@ -251,7 +252,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         ExportButton(
-                          accentColor: TechColors.glowGreen,
+                          accentColor: AppTheme.glowGreen(context),
                           exportTitle: '除尘器入口',
                           columns: const ['日期', '时间', '温度'],
                           data: _dustInletData,
@@ -260,7 +261,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                       child: TechDataTable(
                         columns: const ['日期', '时间', '温度'],
                         data: _dustInletData,
-                        accentColor: TechColors.glowGreen,
+                        accentColor: AppTheme.glowGreen(context),
                       ),
                     ),
                   ),
@@ -271,11 +272,11 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                     margin: const EdgeInsets.fromLTRB(0, 0, 12, 12),
                     child: TechPanel(
                       title: _panels[3].title,
-                      accentColor: TechColors.glowOrange,
+                      accentColor: AppTheme.glowOrange(context),
                       height: double.infinity,
                       headerActions: [
                         TimeRangeSelector(
-                          accentColor: TechColors.glowOrange,
+                          accentColor: AppTheme.glowOrange(context),
                           onTimeRangeChanged: (start, end) {
                             setState(() {
                               _pm10StartTime = start;
@@ -286,7 +287,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         RefreshButton(
-                          accentColor: TechColors.glowOrange,
+                          accentColor: AppTheme.glowOrange(context),
                           onPressed: () {
                             setState(() {
                               // 刷新数据
@@ -295,7 +296,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         ),
                         const SizedBox(width: 8),
                         ExportButton(
-                          accentColor: TechColors.glowOrange,
+                          accentColor: AppTheme.glowOrange(context),
                           exportTitle: '除尘器排风口PM10',
                           columns: const ['日期', '时间', '浓度'],
                           data: _pm10Data,
@@ -304,7 +305,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                       child: TechDataTable(
                         columns: const ['日期', '时间', '浓度'],
                         data: _pm10Data,
-                        accentColor: TechColors.glowOrange,
+                        accentColor: AppTheme.glowOrange(context),
                       ),
                     ),
                   ),
@@ -325,11 +326,11 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                         child: TechPanel(
                           title: _panels[4].title,
-                          accentColor: TechColors.statusAlarm,
+                          accentColor: AppTheme.statusAlarm(context),
                           height: double.infinity,
                           headerActions: [
                             TimeRangeSelector(
-                              accentColor: TechColors.statusAlarm,
+                              accentColor: AppTheme.statusAlarm(context),
                               onTimeRangeChanged: (start, end) {
                                 setState(() {
                                   _fanVibrationStartTime = start;
@@ -339,12 +340,12 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                             ),
                             const SizedBox(width: 8),
                             RefreshButton(
-                              accentColor: TechColors.statusAlarm,
+                              accentColor: AppTheme.statusAlarm(context),
                               onPressed: () {},
                             ),
                             const SizedBox(width: 8),
                             ExportButton(
-                              accentColor: TechColors.statusAlarm,
+                              accentColor: AppTheme.statusAlarm(context),
                               exportTitle: '除尘器风机振动',
                               columns: const ['日期', '时间', '幅值', '频率'],
                               data: _fanVibrationData,
@@ -353,7 +354,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                           child: TechDataTable(
                             columns: const ['日期', '时间', '幅值', '频率'],
                             data: _fanVibrationData,
-                            accentColor: TechColors.statusAlarm,
+                            accentColor: AppTheme.statusAlarm(context),
                           ),
                         ),
                       ),
@@ -369,11 +370,11 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                         margin: const EdgeInsets.fromLTRB(0, 0, 12, 12),
                         child: TechPanel(
                           title: _panels[5].title,
-                          accentColor: TechColors.statusWarning,
+                          accentColor: AppTheme.statusWarning(context),
                           height: double.infinity,
                           headerActions: [
                             TimeRangeSelector(
-                              accentColor: TechColors.statusWarning,
+                              accentColor: AppTheme.statusWarning(context),
                               onTimeRangeChanged: (start, end) {
                                 setState(() {
                                   _waterPumpVibrationStartTime = start;
@@ -383,12 +384,12 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                             ),
                             const SizedBox(width: 8),
                             RefreshButton(
-                              accentColor: TechColors.statusWarning,
+                              accentColor: AppTheme.statusWarning(context),
                               onPressed: () {},
                             ),
                             const SizedBox(width: 8),
                             ExportButton(
-                              accentColor: TechColors.statusWarning,
+                              accentColor: AppTheme.statusWarning(context),
                               exportTitle: '水泵振动',
                               columns: const ['日期', '时间', '幅值', '频率'],
                               data: _waterPumpVibrationData,
@@ -397,7 +398,7 @@ class _AlarmRecordPageState extends State<AlarmRecordPage> {
                           child: TechDataTable(
                             columns: const ['日期', '时间', '幅值', '频率'],
                             data: _waterPumpVibrationData,
-                            accentColor: TechColors.statusWarning,
+                            accentColor: AppTheme.statusWarning(context),
                           ),
                         ),
                       ),

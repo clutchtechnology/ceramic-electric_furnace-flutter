@@ -12,10 +12,10 @@ class RefreshButton extends StatefulWidget {
   const RefreshButton({
     super.key,
     this.onPressed,
-    this.accentColor = TechColors.glowCyan,
+    Color? accentColor,
     this.tooltip = '刷新数据',
     this.size = 28,
-  });
+  }) : accentColor = accentColor ?? const Color(0xFF00d4ff);
 
   @override
   State<RefreshButton> createState() => _RefreshButtonState();
@@ -46,7 +46,7 @@ class _RefreshButtonState extends State<RefreshButton>
   Future<void> _handleRefresh() async {
     // 触发旋转动画
     _rotationController.forward(from: 0.0);
-    
+
     // 执行刷新回调
     if (widget.onPressed != null) {
       widget.onPressed!();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../widgets/common/tech_line_widgets.dart';
+import '../theme/app_theme.dart';
+
 import '../api/status_service.dart';
 import '../models/status_model.dart';
 
@@ -138,16 +139,16 @@ class Db30StatusPageState extends State<Db30StatusPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TechColors.bgDeep,
+      backgroundColor: AppTheme.bgDeep(context),
       body: Column(
         children: [
           _buildHeader(),
           Expanded(
             child: _errorMessage != null
-                ? _buildErrorWidget()
+                ? _buildErrorWidget(context)
                 : _response == null
-                    ? _buildLoadingWidget()
-                    : _buildDeviceGrid(),
+                    ? _buildLoadingWidget(context)
+                    : _buildDeviceGrid(context),
           ),
         ],
       ),
@@ -161,40 +162,42 @@ class Db30StatusPageState extends State<Db30StatusPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: TechColors.bgDark,
+        color: AppTheme.bgDark(context),
         border: Border(
-          bottom: BorderSide(color: TechColors.borderDark.withOpacity(0.5)),
+          bottom:
+              BorderSide(color: AppTheme.borderDark(context).withOpacity(0.5)),
         ),
       ),
       child: Row(
         children: [
           // 标题
-          const Icon(Icons.router, color: TechColors.glowCyan, size: 20),
+          Icon(Icons.router, color: AppTheme.glowCyan(context), size: 20),
           const SizedBox(width: 8),
-          const Text(
-            'DB30 Modbus 通信状态',
+          Text(
+            'DB30',
             style: TextStyle(
-              color: TechColors.textPrimary,
+              color: AppTheme.textPrimary(context),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
           const Spacer(),
           // 统计
-          _buildStatChip('正常', summary.healthy, TechColors.glowGreen),
+          _buildStatChip('正常', summary.healthy, AppTheme.glowGreen(context)),
           const SizedBox(width: 8),
-          _buildStatChip('异常', summary.error, TechColors.glowRed),
+          _buildStatChip('异常', summary.error, AppTheme.glowRed(context)),
           const SizedBox(width: 8),
-          _buildStatChip('总数', summary.total, TechColors.glowCyan),
+          _buildStatChip('总数', summary.total, AppTheme.glowCyan(context)),
           const SizedBox(width: 12),
           // 刷新指示器
           if (_isRefreshing)
-            const SizedBox(
+            SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(TechColors.glowCyan),
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppTheme.glowCyan(context)),
               ),
             ),
         ],
@@ -231,57 +234,59 @@ class Db30StatusPageState extends State<Db30StatusPage> {
     );
   }
 
-  Widget _buildLoadingWidget() {
-    return const Center(
+  Widget _buildLoadingWidget(BuildContext context) {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(TechColors.glowCyan),
+            valueColor:
+                AlwaysStoppedAnimation<Color>(AppTheme.glowCyan(context)),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             '正在加载状态数据...',
-            style: TextStyle(color: TechColors.textSecondary),
+            style: TextStyle(color: AppTheme.textSecondary(context)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: TechColors.glowRed, size: 48),
+          Icon(Icons.error_outline, color: AppTheme.glowRed(context), size: 48),
           const SizedBox(height: 16),
           Text(
             _errorMessage ?? '未知错误',
-            style: const TextStyle(color: TechColors.textSecondary),
+            style: TextStyle(color: AppTheme.textSecondary(context)),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _fetchData,
             style: ElevatedButton.styleFrom(
-              backgroundColor: TechColors.glowCyan.withOpacity(0.2),
+              backgroundColor: AppTheme.glowCyan(context).withOpacity(0.2),
             ),
             child:
-                const Text('重试', style: TextStyle(color: TechColors.glowCyan)),
+                Text('重试', style: TextStyle(color: AppTheme.glowCyan(context))),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDeviceGrid() {
+  Widget _buildDeviceGrid(BuildContext context) {
     final devices = _response?.devices ?? [];
 
     if (devices.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           '暂无设备数据',
-          style: TextStyle(color: TechColors.textSecondary, fontSize: 11),
+          style:
+              TextStyle(color: AppTheme.textSecondary(context), fontSize: 11),
         ),
       );
     }
@@ -296,24 +301,25 @@ class Db30StatusPageState extends State<Db30StatusPage> {
           childAspectRatio: 3.8,
         ),
         itemCount: devices.length,
-        itemBuilder: (context, index) => _buildDeviceCard(devices[index], index),
+        itemBuilder: (context, index) =>
+            _buildDeviceCard(context, devices[index], index),
       ),
     );
   }
 
-  Widget _buildDeviceCard(Db30DeviceStatus device, int index) {
+  Widget _buildDeviceCard(BuildContext context, Db30DeviceStatus device, int index) {
     final hasError = !device.isNormal;
-    final accentColor = hasError ? TechColors.glowRed : TechColors.glowGreen;
+    final accentColor = hasError ? AppTheme.glowRed(context) : AppTheme.glowGreen(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.4),
+        color: AppTheme.bgMedium(context).withOpacity(0.4),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: hasError
-              ? TechColors.glowRed.withOpacity(0.3)
-              : TechColors.borderDark.withOpacity(0.2),
+              ? AppTheme.glowRed(context).withOpacity(0.3)
+              : AppTheme.borderDark(context).withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -323,8 +329,8 @@ class Db30StatusPageState extends State<Db30StatusPage> {
             width: 20,
             child: Text(
               '${index + 1}',
-              style: const TextStyle(
-                color: TechColors.textSecondary,
+              style: TextStyle(
+                color: AppTheme.textSecondary(context),
                 fontSize: 10,
                 fontFamily: 'Roboto Mono',
               ),
@@ -351,8 +357,8 @@ class Db30StatusPageState extends State<Db30StatusPage> {
           Expanded(
             child: Text(
               device.deviceName,
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 11,
                 fontFamily: 'Roboto Mono',
               ),
@@ -361,16 +367,17 @@ class Db30StatusPageState extends State<Db30StatusPage> {
             ),
           ),
           // D (Done)
-          _buildValueBadge('D', device.done ? '1' : '0', device.done),
+          _buildValueBadge(context, 'D', device.done ? '1' : '0', device.done),
           const SizedBox(width: 4),
           // B (Busy)
-          _buildValueBadge('B', device.busy ? '1' : '0', device.busy),
+          _buildValueBadge(context, 'B', device.busy ? '1' : '0', device.busy),
           const SizedBox(width: 4),
           // E (Error)
-          _buildValueBadge('E', device.error ? '1' : '0', device.error),
+          _buildValueBadge(context, 'E', device.error ? '1' : '0', device.error),
           const SizedBox(width: 4),
           // S (Status - 十六进制)
           _buildValueBadge(
+            context,
             'S',
             device.status.toRadixString(16).toUpperCase().padLeft(4, '0'),
             device.status != 0,
@@ -381,23 +388,25 @@ class Db30StatusPageState extends State<Db30StatusPage> {
   }
 
   /// 通用值徽章 (与磨料车间样式一致)
-  Widget _buildValueBadge(String label, String value, bool isActive) {
-    final color = isActive ? TechColors.glowCyan : TechColors.textSecondary;
+  Widget _buildValueBadge(
+      BuildContext context, String label, String value, bool isActive) {
+    final color =
+        isActive ? AppTheme.glowCyan(context) : AppTheme.textSecondary(context);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '$label:',
-          style: const TextStyle(color: TechColors.textSecondary, fontSize: 9),
+          style: TextStyle(color: AppTheme.textSecondary(context), fontSize: 9),
         ),
         const SizedBox(width: 2),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           decoration: BoxDecoration(
             color: isActive
-                ? TechColors.glowCyan.withOpacity(0.2)
-                : TechColors.bgMedium.withOpacity(0.3),
+                ? AppTheme.glowCyan(context).withOpacity(0.2)
+                : AppTheme.bgMedium(context).withOpacity(0.3),
             borderRadius: BorderRadius.circular(2),
           ),
           child: Text(

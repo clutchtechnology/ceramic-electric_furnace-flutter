@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../theme/app_theme.dart';
 import '../widgets/common/tech_line_widgets.dart';
 import '../widgets/realtime_data/data_card.dart';
 import '../widgets/realtime_data/valve_control.dart';
@@ -864,15 +865,15 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
   Widget _buildFanPowerCard() {
     // 除尘器未接入，显示"-"
     return InfoCard(
-      accentColor: TechColors.textSecondary,
+      accentColor: AppTheme.textSecondary(context),
       items: [
         InfoCardItem(
           icon: Icons.flash_on,
           label: '瞬时功率',
           value: '-',
           unit: 'kW',
-          iconColor: TechColors.textSecondary,
-          valueColor: TechColors.textSecondary,
+          iconColor: AppTheme.textSecondary(context),
+          valueColor: AppTheme.textSecondary(context),
           layout: InfoCardLayout.horizontal,
         ),
         InfoCardItem(
@@ -880,8 +881,8 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           label: '累计能耗',
           value: '-',
           unit: 'kWh',
-          iconColor: TechColors.textSecondary,
-          valueColor: TechColors.textSecondary,
+          iconColor: AppTheme.textSecondary(context),
+          valueColor: AppTheme.textSecondary(context),
           layout: InfoCardLayout.horizontal,
         ),
       ],
@@ -894,15 +895,15 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     final energy = _realtimeData.electricity.energyKWh;
 
     return InfoCard(
-      accentColor: TechColors.glowOrange,
+      accentColor: AppTheme.glowOrange(context),
       items: [
         InfoCardItem(
           icon: Icons.flash_on,
           label: '瞬时功率',
           value: power.toStringAsFixed(1),
           unit: 'kW',
-          iconColor: TechColors.glowOrange,
-          valueColor: TechColors.glowOrange,
+          iconColor: AppTheme.glowOrange(context),
+          valueColor: AppTheme.glowOrange(context),
           layout: InfoCardLayout.horizontal,
         ),
         InfoCardItem(
@@ -910,8 +911,8 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           label: '累计能耗',
           value: energy.toStringAsFixed(1),
           unit: 'kWh',
-          iconColor: TechColors.glowBlue,
-          valueColor: TechColors.glowBlue,
+          iconColor: AppTheme.glowBlue(context),
+          valueColor: AppTheme.glowBlue(context),
           layout: InfoCardLayout.horizontal,
         ),
       ],
@@ -943,18 +944,18 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: TechColors.bgMedium,
+        backgroundColor: AppTheme.bgMedium(context),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: TechColors.glowCyan.withOpacity(0.3)),
+          side: BorderSide(color: AppTheme.glowCyan(context).withOpacity(0.3)),
         ),
         title: Row(
           children: [
-            Icon(Icons.graphic_eq, color: TechColors.glowCyan, size: 20),
+            Icon(Icons.graphic_eq, color: AppTheme.glowCyan(context), size: 20),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               '振动频谱分析',
-              style: TextStyle(color: TechColors.textPrimary),
+              style: TextStyle(color: AppTheme.textPrimary(context)),
             ),
           ],
         ),
@@ -962,14 +963,15 @@ class RealtimeDataPageState extends State<RealtimeDataPage> {
           width: 600,
           height: 400,
           decoration: BoxDecoration(
-            color: TechColors.bgDeep,
+            color: AppTheme.bgDeep(context),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: TechColors.borderDark),
+            border: Border.all(color: AppTheme.borderDark(context)),
           ),
-          child: const Center(
+          child: Center(
             child: Text(
               '频谱内容将在这里显示',
-              style: TextStyle(color: TechColors.textSecondary, fontSize: 16),
+              style: TextStyle(
+                  color: AppTheme.textSecondary(context), fontSize: 16),
             ),
           ),
         ),
@@ -1442,8 +1444,8 @@ class FurnacePowerCard extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(label,
-                style: const TextStyle(
-                    color: TechColors.textSecondary, fontSize: 16)),
+                style: TextStyle(
+                    color: AppTheme.textSecondary(context), fontSize: 16)),
           ),
           Text(
             value,
@@ -1459,8 +1461,8 @@ class FurnacePowerCard extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(unit,
-              style: const TextStyle(
-                  color: TechColors.textSecondary, fontSize: 16)),
+              style: TextStyle(
+                  color: AppTheme.textSecondary(context), fontSize: 16)),
         ],
       );
     }
@@ -1468,17 +1470,18 @@ class FurnacePowerCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.3),
+        color: AppTheme.bgMedium(context).withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: TechColors.borderDark),
+        border: Border.all(color: AppTheme.borderDark(context)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          buildRow(Icons.flash_on, '瞬时功率', power, 'kW', TechColors.glowOrange),
-          const Divider(height: 32, color: TechColors.borderDark),
-          buildRow(
-              Icons.electric_meter, '累计能耗', energy, 'kWh', TechColors.glowBlue),
+          buildRow(Icons.flash_on, '瞬时功率', power, 'kW',
+              AppTheme.glowOrange(context)),
+          Divider(height: 32, color: AppTheme.borderDark(context)),
+          buildRow(Icons.electric_meter, '累计能耗', energy, 'kWh',
+              AppTheme.glowBlue(context)),
         ],
       ),
     );
@@ -1547,20 +1550,23 @@ class _ElectrodeWidget extends StatelessWidget {
     final isAlarm = isDepthAlarm || isCurrentAlarm;
 
     // 根据报警状态选择边框和阴影颜色
-    final borderColor = isAlarm ? TechColors.statusAlarm : TechColors.glowCyan;
+    final borderColor =
+        isAlarm ? AppTheme.statusAlarm(context) : AppTheme.glowCyan(context);
 
     // 深度颜色
-    final depthColor =
-        isDepthAlarm ? TechColors.statusAlarm : TechColors.glowCyan;
+    final depthColor = isDepthAlarm
+        ? AppTheme.statusAlarm(context)
+        : AppTheme.glowCyan(context);
 
     // 电流颜色
-    final currentColor =
-        isCurrentAlarm ? TechColors.statusAlarm : TechColors.glowOrange;
+    final currentColor = isCurrentAlarm
+        ? AppTheme.statusAlarm(context)
+        : AppTheme.glowOrange(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.9),
+        color: AppTheme.bgMedium(context).withOpacity(0.9),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: borderColor, width: isAlarm ? 2.0 : 1.5),
         boxShadow: [
@@ -1916,10 +1922,10 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
                         onPressed: _isLoading
                             ? null
                             : () => Navigator.of(context).pop(),
-                        child: const Text(
+                        child: Text(
                           '取消',
                           style: TextStyle(
-                            color: TechColors.textSecondary,
+                            color: AppTheme.textSecondary(context),
                             fontSize: 18,
                           ),
                         ),
@@ -1928,25 +1934,27 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
                       ElevatedButton(
                         onPressed: _isLoading ? null : _onConfirm,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: TechColors.glowCyan.withOpacity(0.2),
-                          foregroundColor: TechColors.glowCyan,
+                          backgroundColor:
+                              AppTheme.glowCyan(context).withOpacity(0.2),
+                          foregroundColor: AppTheme.glowCyan(context),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 32, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
-                            side: BorderSide(color: TechColors.glowCyan),
+                            side:
+                                BorderSide(color: AppTheme.borderGlow(context)),
                           ),
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: TechColors.glowCyan,
+                                  color: AppTheme.borderGlow(context),
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 '确认',
                                 style: TextStyle(
                                   fontSize: 18,
@@ -2006,10 +2014,10 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '年份',
           style: TextStyle(
-            color: TechColors.textSecondary,
+            color: AppTheme.textSecondary(context),
             fontSize: 18,
           ),
         ),
@@ -2018,20 +2026,20 @@ class _BatchConfigDialogState extends State<BatchConfigDialog> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: TechColors.bgMedium.withOpacity(0.5),
+            color: AppTheme.bgMedium(context).withOpacity(0.5),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: TechColors.borderDark),
+            border: Border.all(color: AppTheme.borderDark(context)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
               value: _selectedYear,
-              dropdownColor: TechColors.bgDark,
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              dropdownColor: AppTheme.bgDark(context),
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 20,
               ),
-              icon:
-                  const Icon(Icons.arrow_drop_down, color: TechColors.glowCyan),
+              icon: Icon(Icons.arrow_drop_down,
+                  color: AppTheme.borderGlow(context)),
               onChanged: (value) {
                 if (value != null && value != _selectedYear) {
                   setState(() => _selectedYear = value);
@@ -2568,10 +2576,10 @@ class _PowerRecoveryDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   // 提示文字
-                  const Text(
+                  Text(
                     '系统检测到上次冶炼因断电而中断，请选择：',
                     style: TextStyle(
-                      color: TechColors.textSecondary,
+                      color: AppTheme.textSecondary(context),
                       fontSize: 16,
                     ),
                   ),
@@ -2583,8 +2591,9 @@ class _PowerRecoveryDialog extends StatelessWidget {
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(false),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: TechColors.statusAlarm,
-                            side: BorderSide(color: TechColors.statusAlarm),
+                            foregroundColor: AppTheme.statusAlarm(context),
+                            side: BorderSide(
+                                color: AppTheme.statusAlarm(context)),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -2602,12 +2611,13 @@ class _PowerRecoveryDialog extends StatelessWidget {
                           onPressed: () => Navigator.of(context).pop(true),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                TechColors.statusNormal.withOpacity(0.2),
-                            foregroundColor: TechColors.statusNormal,
+                                AppTheme.statusNormal(context).withOpacity(0.2),
+                            foregroundColor: AppTheme.statusNormal(context),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(color: TechColors.statusNormal),
+                              side: BorderSide(
+                                  color: AppTheme.statusNormal(context)),
                             ),
                           ),
                           child: const Text(

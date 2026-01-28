@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/index.dart';
 import '../../api/api.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 健康状态小部件 - 显示后端、PLC、数据库连接状态
 class HealthStatusWidget extends StatefulWidget {
@@ -241,11 +242,12 @@ class HealthStatusWidgetState extends State<HealthStatusWidget> {
   }
 
   Widget _buildStatusIndicator(String label, bool isHealthy) {
-    final color = isHealthy ? TechColors.glowGreen : TechColors.glowRed;
+    final color =
+        isHealthy ? AppTheme.glowGreen(context) : AppTheme.glowRed(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: TechColors.bgMedium,
+        color: AppTheme.bgMedium(context),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: color.withOpacity(0.5),

@@ -14,7 +14,7 @@ class ExportButton extends StatefulWidget {
   final String tooltip;
   final bool isLoading;
   final double size;
-  
+
   // 新增参数：用于导出功能
   final String? exportTitle; // 导出文件的标题
   final List<String>? columns; // 表头列
@@ -23,14 +23,14 @@ class ExportButton extends StatefulWidget {
   const ExportButton({
     super.key,
     this.onPressed,
-    this.accentColor = TechColors.glowCyan,
+    Color? accentColor,
     this.tooltip = '导出数据',
     this.isLoading = false,
     this.size = 28,
     this.exportTitle,
     this.columns,
     this.data,
-  });
+  }) : accentColor = accentColor ?? const Color(0xFF00d4ff);
 
   @override
   State<ExportButton> createState() => _ExportButtonState();
@@ -113,7 +113,7 @@ class _ExportButtonState extends State<ExportButton>
   Future<void> _exportToCsv(String savePath) async {
     // 准备数据：表头 + 数据行
     List<List<String>> rows = [widget.columns!, ...widget.data!];
-    
+
     // 使用正确的CSV转换设置
     String csv = const ListToCsvConverter(
       fieldDelimiter: ',',
@@ -121,12 +121,12 @@ class _ExportButtonState extends State<ExportButton>
       textEndDelimiter: '"',
       eol: '\r\n',
     ).convert(rows);
-    
+
     // 添加UTF-8 BOM以确保Excel正确识别中文
     final bomUtf8 = [0xEF, 0xBB, 0xBF];
     // 使用utf8.encode正确编码中文字符
     final csvBytes = bomUtf8 + utf8.encode(csv);
-    
+
     File(savePath)
       ..createSync(recursive: true)
       ..writeAsBytesSync(csvBytes);
@@ -138,13 +138,14 @@ class _ExportButtonState extends State<ExportButton>
   }
 
   /// 显示提示信息
-  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+  void _showSnackBar(BuildContext context, String message,
+      {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError 
-          ? Colors.red.withOpacity(0.8) 
-          : widget.accentColor.withOpacity(0.8),
+        backgroundColor: isError
+            ? Colors.red.withOpacity(0.8)
+            : widget.accentColor.withOpacity(0.8),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         duration: Duration(seconds: isError ? 4 : 2),
@@ -217,7 +218,7 @@ class ExportButtonWithLabel extends StatefulWidget {
   final Color accentColor;
   final String label;
   final bool isLoading;
-  
+
   // 新增参数：用于导出功能
   final String? exportTitle; // 导出文件的标题
   final List<String>? columns; // 表头列
@@ -226,13 +227,13 @@ class ExportButtonWithLabel extends StatefulWidget {
   const ExportButtonWithLabel({
     super.key,
     this.onPressed,
-    this.accentColor = TechColors.glowCyan,
+    Color? accentColor,
     this.label = '导出',
     this.isLoading = false,
     this.exportTitle,
     this.columns,
     this.data,
-  });
+  }) : accentColor = accentColor ?? const Color(0xFF00d4ff);
 
   @override
   State<ExportButtonWithLabel> createState() => _ExportButtonWithLabelState();
@@ -314,7 +315,7 @@ class _ExportButtonWithLabelState extends State<ExportButtonWithLabel>
   Future<void> _exportToCsv(String savePath) async {
     // 准备数据：表头 + 数据行
     List<List<String>> rows = [widget.columns!, ...widget.data!];
-    
+
     // 使用正确的CSV转换设置
     String csv = const ListToCsvConverter(
       fieldDelimiter: ',',
@@ -322,12 +323,12 @@ class _ExportButtonWithLabelState extends State<ExportButtonWithLabel>
       textEndDelimiter: '"',
       eol: '\r\n',
     ).convert(rows);
-    
+
     // 添加UTF-8 BOM以确保Excel正确识别中文
     final bomUtf8 = [0xEF, 0xBB, 0xBF];
     // 使用utf8.encode正确编码中文字符
     final csvBytes = bomUtf8 + utf8.encode(csv);
-    
+
     File(savePath)
       ..createSync(recursive: true)
       ..writeAsBytesSync(csvBytes);
@@ -337,13 +338,14 @@ class _ExportButtonWithLabelState extends State<ExportButtonWithLabel>
     return DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
   }
 
-  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+  void _showSnackBar(BuildContext context, String message,
+      {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError 
-          ? Colors.red.withOpacity(0.8) 
-          : widget.accentColor.withOpacity(0.8),
+        backgroundColor: isError
+            ? Colors.red.withOpacity(0.8)
+            : widget.accentColor.withOpacity(0.8),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         duration: Duration(seconds: isError ? 4 : 2),

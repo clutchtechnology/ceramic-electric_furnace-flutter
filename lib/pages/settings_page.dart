@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../widgets/common/tech_line_widgets.dart';
+import '../widgets/common/theme_switch.dart';
+import '../theme/app_theme.dart';
 import '../models/app_state.dart';
 import '../api/valve_api.dart';
+import '../main.dart';
 
 /// 系统配置页面
 class SettingsPage extends StatefulWidget {
@@ -221,7 +224,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: TechColors.bgDeep,
+      color: AppTheme.bgDeep(context),
       padding: const EdgeInsets.all(20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,17 +253,17 @@ class _SettingsPageState extends State<SettingsPage> {
       width: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: TechColors.bgDark.withOpacity(0.5),
+        color: AppTheme.bgDark(context).withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: TechColors.borderDark),
+        border: Border.all(color: AppTheme.borderDark(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '配置中心',
             style: TextStyle(
-              color: TechColors.textPrimary,
+              color: AppTheme.textPrimary(context),
               fontSize: 24,
               fontWeight: FontWeight.w600,
             ),
@@ -280,12 +283,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? TechColors.glowCyan.withOpacity(0.15)
+                      ? AppTheme.borderGlow(context).withOpacity(0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: isSelected
-                        ? TechColors.glowCyan.withOpacity(0.5)
+                        ? AppTheme.borderGlow(context).withOpacity(0.5)
                         : Colors.transparent,
                   ),
                 ),
@@ -294,8 +297,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     Icon(
                       item['icon'] as IconData,
                       color: isSelected
-                          ? TechColors.glowCyan
-                          : TechColors.textSecondary,
+                          ? AppTheme.borderGlow(context)
+                          : AppTheme.textSecondary(context),
                       size: 26,
                     ),
                     const SizedBox(width: 12),
@@ -303,8 +306,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       item['title'] as String,
                       style: TextStyle(
                         color: isSelected
-                            ? TechColors.glowCyan
-                            : TechColors.textSecondary,
+                            ? AppTheme.borderGlow(context)
+                            : AppTheme.textSecondary(context),
                         fontSize: 19,
                         fontWeight:
                             isSelected ? FontWeight.w500 : FontWeight.w400,
@@ -346,15 +349,15 @@ class _SettingsPageState extends State<SettingsPage> {
               width: 4,
               height: 24,
               decoration: BoxDecoration(
-                color: TechColors.glowCyan,
+                color: AppTheme.borderGlow(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(width: 12),
             Text(
               _getTitle(),
-              style: const TextStyle(
-                color: TechColors.textPrimary,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 28,
                 fontWeight: FontWeight.w600,
               ),
@@ -367,24 +370,25 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: ElevatedButton.icon(
                   onPressed: _isLoadingValveConfig ? null : _loadValveConfig,
                   icon: _isLoadingValveConfig
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: TechColors.glowCyan,
+                            color: AppTheme.borderGlow(context),
                           ),
                         )
-                      : const Icon(Icons.refresh, size: 22),
+                      : Icon(Icons.refresh, size: 22),
                   label: Text(
                     _isLoadingValveConfig ? '加载中...' : '刷新配置',
-                    style: const TextStyle(fontSize: 17),
+                    style: TextStyle(fontSize: 17),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: TechColors.glowGreen.withOpacity(0.2),
-                    foregroundColor: TechColors.glowGreen,
+                    backgroundColor:
+                        AppTheme.glowGreen(context).withOpacity(0.2),
+                    foregroundColor: AppTheme.glowGreen(context),
                     side: BorderSide(
-                        color: TechColors.glowGreen.withOpacity(0.5)),
+                        color: AppTheme.glowGreen(context).withOpacity(0.5)),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                   ),
@@ -392,12 +396,13 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ElevatedButton.icon(
               onPressed: _saveSettings,
-              icon: const Icon(Icons.save, size: 26),
+              icon: Icon(Icons.save, size: 26),
               label: const Text('保存配置', style: TextStyle(fontSize: 19)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: TechColors.glowCyan.withOpacity(0.2),
-                foregroundColor: TechColors.glowCyan,
-                side: BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
+                backgroundColor: AppTheme.borderGlow(context).withOpacity(0.2),
+                foregroundColor: AppTheme.borderGlow(context),
+                side: BorderSide(
+                    color: AppTheme.borderGlow(context).withOpacity(0.5)),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
@@ -423,6 +428,22 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSystemConfigContent() {
     return Column(
       children: [
+        // 主题切换
+        _buildConfigSection(
+          title: '主题设置',
+          icon: Icons.palette,
+          children: [
+            ThemeSwitch(
+              isDarkMode: ThemeManager.isDarkMode(),
+              onThemeChanged: (isDark) async {
+                final mode = isDark ? ThemeMode.dark : ThemeMode.light;
+                await ThemeManager.setThemeMode(mode);
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         // 服务器地址配置
         _buildConfigSection(
           title: '服务器地址配置',
@@ -521,7 +542,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '测距1 阈值',
           icon: Icons.straighten,
-          accentColor: TechColors.glowCyan,
+          accentColor: AppTheme.borderGlow(context),
           isExpanded: _distance1Expanded,
           onToggle: () =>
               setState(() => _distance1Expanded = !_distance1Expanded),
@@ -543,7 +564,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '测距2 阈值',
           icon: Icons.straighten,
-          accentColor: TechColors.glowCyan,
+          accentColor: AppTheme.borderGlow(context),
           isExpanded: _distance2Expanded,
           onToggle: () =>
               setState(() => _distance2Expanded = !_distance2Expanded),
@@ -565,7 +586,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '测距3 阈值',
           icon: Icons.straighten,
-          accentColor: TechColors.glowCyan,
+          accentColor: AppTheme.borderGlow(context),
           isExpanded: _distance3Expanded,
           onToggle: () =>
               setState(() => _distance3Expanded = !_distance3Expanded),
@@ -613,7 +634,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '炉盖冷却水流速阈值',
           icon: Icons.water,
-          accentColor: TechColors.glowOrange,
+          accentColor: AppTheme.glowOrange(context),
           isExpanded: _furnaceCoverFlowExpanded,
           onToggle: () => setState(
               () => _furnaceCoverFlowExpanded = !_furnaceCoverFlowExpanded),
@@ -637,7 +658,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '炉盖冷却水水压阈值',
           icon: Icons.opacity,
-          accentColor: TechColors.glowBlue,
+          accentColor: AppTheme.glowBlue(context),
           isExpanded: _furnaceCoverPressureExpanded,
           onToggle: () => setState(() =>
               _furnaceCoverPressureExpanded = !_furnaceCoverPressureExpanded),
@@ -661,7 +682,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '炉皮冷却水流速阈值',
           icon: Icons.water,
-          accentColor: TechColors.glowOrange,
+          accentColor: AppTheme.glowOrange(context),
           isExpanded: _furnaceShellFlowExpanded,
           onToggle: () => setState(
               () => _furnaceShellFlowExpanded = !_furnaceShellFlowExpanded),
@@ -685,7 +706,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '炉皮冷却水水压阈值',
           icon: Icons.opacity,
-          accentColor: TechColors.glowBlue,
+          accentColor: AppTheme.glowBlue(context),
           isExpanded: _furnaceShellPressureExpanded,
           onToggle: () => setState(() =>
               _furnaceShellPressureExpanded = !_furnaceShellPressureExpanded),
@@ -714,13 +735,14 @@ class _SettingsPageState extends State<SettingsPage> {
     required List<Widget> children,
     required bool isExpanded,
     required VoidCallback onToggle,
-    Color accentColor = TechColors.glowCyan,
+    Color? accentColor,
   }) {
+    final accent = accentColor ?? AppTheme.borderGlow(context);
     return Container(
       decoration: BoxDecoration(
-        color: TechColors.bgDark.withOpacity(0.5),
+        color: AppTheme.bgDark(context).withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: TechColors.borderDark),
+        border: Border.all(color: AppTheme.borderDark(context)),
       ),
       child: Column(
         children: [
@@ -746,7 +768,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: TechColors.textSecondary,
+                    color: AppTheme.textSecondary(context),
                     size: 24,
                   ),
                 ],
@@ -771,14 +793,15 @@ class _SettingsPageState extends State<SettingsPage> {
     required String title,
     required IconData icon,
     required List<Widget> children,
-    Color accentColor = TechColors.glowCyan,
+    Color? accentColor,
   }) {
+    final accent = accentColor ?? AppTheme.borderGlow(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: TechColors.bgDark.withOpacity(0.5),
+        color: AppTheme.bgDark(context).withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: TechColors.borderDark),
+        border: Border.all(color: AppTheme.borderDark(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -811,8 +834,8 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: TechColors.textSecondary,
+          style: TextStyle(
+            color: AppTheme.textSecondary(context),
             fontSize: 18,
           ),
         ),
@@ -820,25 +843,25 @@ class _SettingsPageState extends State<SettingsPage> {
         TextField(
           controller: controller,
           readOnly: true, // 系统配置改为只读
-          style: const TextStyle(
-            color: TechColors.textPrimary,
+          style: TextStyle(
+            color: AppTheme.textPrimary(context),
             fontSize: 19,
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: TechColors.bgMedium.withOpacity(0.5),
+            fillColor: AppTheme.bgMedium(context).withOpacity(0.5),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.borderDark),
+              borderSide: BorderSide(color: AppTheme.borderDark(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.borderDark),
+              borderSide: BorderSide(color: AppTheme.borderDark(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide:
-                  BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
+              borderSide: BorderSide(
+                  color: AppTheme.borderGlow(context).withOpacity(0.5)),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -853,10 +876,10 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '密码',
           style: TextStyle(
-            color: TechColors.textSecondary,
+            color: AppTheme.textSecondary(context),
             fontSize: 18,
           ),
         ),
@@ -865,32 +888,32 @@ class _SettingsPageState extends State<SettingsPage> {
           controller: _dbPasswordController,
           readOnly: true, // 密码框改为只读
           obscureText: !_showPassword,
-          style: const TextStyle(
-            color: TechColors.textPrimary,
+          style: TextStyle(
+            color: AppTheme.textPrimary(context),
             fontSize: 19,
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: TechColors.bgMedium.withOpacity(0.5),
+            fillColor: AppTheme.bgMedium(context).withOpacity(0.5),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.borderDark),
+              borderSide: BorderSide(color: AppTheme.borderDark(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.borderDark),
+              borderSide: BorderSide(color: AppTheme.borderDark(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide:
-                  BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
+              borderSide: BorderSide(
+                  color: AppTheme.borderGlow(context).withOpacity(0.5)),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             suffixIcon: IconButton(
               icon: Icon(
                 _showPassword ? Icons.visibility : Icons.visibility_off,
-                color: TechColors.textSecondary,
+                color: AppTheme.textSecondary(context),
                 size: 26,
               ),
               onPressed: () => setState(() => _showPassword = !_showPassword),
@@ -913,8 +936,8 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: TechColors.textSecondary,
+          style: TextStyle(
+            color: AppTheme.textSecondary(context),
             fontSize: 18,
           ),
         ),
@@ -922,9 +945,9 @@ class _SettingsPageState extends State<SettingsPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: TechColors.bgMedium.withOpacity(0.5),
+            color: AppTheme.bgMedium(context).withOpacity(0.5),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: TechColors.borderDark),
+            border: Border.all(color: AppTheme.borderDark(context)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -935,18 +958,18 @@ class _SettingsPageState extends State<SettingsPage> {
                         value: item,
                         child: Text(
                           item,
-                          style: const TextStyle(
-                            color: TechColors.textPrimary,
+                          style: TextStyle(
+                            color: AppTheme.textPrimary(context),
                             fontSize: 19,
                           ),
                         ),
                       ))
                   .toList(),
               onChanged: null, // 下拉框禁用
-              dropdownColor: TechColors.bgDark,
-              icon: const Icon(
+              dropdownColor: AppTheme.bgDark(context),
+              icon: Icon(
                 Icons.arrow_drop_down,
-                color: TechColors.textSecondary,
+                color: AppTheme.textSecondary(context),
               ),
             ),
           ),
@@ -970,18 +993,19 @@ class _SettingsPageState extends State<SettingsPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(Icons.check_circle, color: TechColors.glowGreen, size: 26),
-            SizedBox(width: 8),
-            Text('配置保存成功', style: TextStyle(fontSize: 19)),
+            Icon(Icons.check_circle,
+                color: AppTheme.glowGreen(context), size: 26),
+            const SizedBox(width: 8),
+            const Text('配置保存成功', style: TextStyle(fontSize: 19)),
           ],
         ),
-        backgroundColor: TechColors.bgDark,
+        backgroundColor: AppTheme.bgDark(context),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: TechColors.glowGreen.withOpacity(0.5)),
+          side: BorderSide(color: AppTheme.glowGreen(context).withOpacity(0.5)),
         ),
       ),
     );
@@ -1001,21 +1025,21 @@ class _SettingsPageState extends State<SettingsPage> {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: TechColors.statusAlarm.withOpacity(0.1),
+              color: AppTheme.statusAlarm(context).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border:
-                  Border.all(color: TechColors.statusAlarm.withOpacity(0.5)),
+              border: Border.all(
+                  color: AppTheme.statusAlarm(context).withOpacity(0.5)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline,
-                    color: TechColors.statusAlarm, size: 24),
+                Icon(Icons.error_outline,
+                    color: AppTheme.statusAlarm(context), size: 24),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _valveConfigError!,
-                    style: const TextStyle(
-                      color: TechColors.statusAlarm,
+                    style: TextStyle(
+                      color: AppTheme.statusAlarm(context),
                       fontSize: 16,
                     ),
                   ),
@@ -1029,19 +1053,21 @@ class _SettingsPageState extends State<SettingsPage> {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: TechColors.glowCyan.withOpacity(0.1),
+            color: AppTheme.glowCyan(context).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: TechColors.glowCyan.withOpacity(0.3)),
+            border:
+                Border.all(color: AppTheme.glowCyan(context).withOpacity(0.3)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.info_outline, color: TechColors.glowCyan, size: 22),
-              SizedBox(width: 8),
+              Icon(Icons.info_outline,
+                  color: AppTheme.glowCyan(context), size: 22),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   '配置每个蝶阀从全关到全开所需的时间（秒），用于计算蝶阀开度百分比。默认值为30秒。',
                   style: TextStyle(
-                    color: TechColors.textSecondary,
+                    color: AppTheme.textSecondary(context),
                     fontSize: 15,
                   ),
                 ),
@@ -1054,7 +1080,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '蝶阀1 全开/全关时间',
           icon: Icons.control_camera,
-          accentColor: TechColors.glowGreen,
+          accentColor: AppTheme.glowGreen(context),
           isExpanded: _valve1Expanded,
           onToggle: () => setState(() => _valve1Expanded = !_valve1Expanded),
           children: [
@@ -1077,7 +1103,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '蝶阀2 全开/全关时间',
           icon: Icons.control_camera,
-          accentColor: TechColors.glowGreen,
+          accentColor: AppTheme.glowGreen(context),
           isExpanded: _valve2Expanded,
           onToggle: () => setState(() => _valve2Expanded = !_valve2Expanded),
           children: [
@@ -1100,7 +1126,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '蝶阀3 全开/全关时间',
           icon: Icons.control_camera,
-          accentColor: TechColors.glowGreen,
+          accentColor: AppTheme.glowGreen(context),
           isExpanded: _valve3Expanded,
           onToggle: () => setState(() => _valve3Expanded = !_valve3Expanded),
           children: [
@@ -1123,7 +1149,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCollapsibleSection(
           title: '蝶阀4 全开/全关时间',
           icon: Icons.control_camera,
-          accentColor: TechColors.glowGreen,
+          accentColor: AppTheme.glowGreen(context),
           isExpanded: _valve4Expanded,
           onToggle: () => setState(() => _valve4Expanded = !_valve4Expanded),
           children: [
@@ -1147,12 +1173,13 @@ class _SettingsPageState extends State<SettingsPage> {
           alignment: Alignment.centerRight,
           child: ElevatedButton.icon(
             onPressed: _resetValveConfigToDefault,
-            icon: const Icon(Icons.restore, size: 22),
+            icon: Icon(Icons.restore, size: 22),
             label: const Text('重置为默认值', style: TextStyle(fontSize: 17)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: TechColors.glowOrange.withOpacity(0.2),
-              foregroundColor: TechColors.glowOrange,
-              side: BorderSide(color: TechColors.glowOrange.withOpacity(0.5)),
+              backgroundColor: AppTheme.glowOrange(context).withOpacity(0.2),
+              foregroundColor: AppTheme.glowOrange(context),
+              side: BorderSide(
+                  color: AppTheme.glowOrange(context).withOpacity(0.5)),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -1169,8 +1196,8 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: TechColors.textSecondary,
+          style: TextStyle(
+            color: AppTheme.textSecondary(context),
             fontSize: 18,
           ),
         ),
@@ -1178,25 +1205,25 @@ class _SettingsPageState extends State<SettingsPage> {
         TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(
-            color: TechColors.textPrimary,
+          style: TextStyle(
+            color: AppTheme.textPrimary(context),
             fontSize: 19,
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: TechColors.bgMedium.withOpacity(0.5),
+            fillColor: AppTheme.bgMedium(context).withOpacity(0.5),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.borderDark),
+              borderSide: BorderSide(color: AppTheme.borderDark(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: TechColors.borderDark),
+              borderSide: BorderSide(color: AppTheme.borderDark(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide:
-                  BorderSide(color: TechColors.glowCyan.withOpacity(0.5)),
+              borderSide: BorderSide(
+                  color: AppTheme.glowCyan(context).withOpacity(0.5)),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1241,14 +1268,15 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: TechColors.glowGreen, size: 22),
-                SizedBox(width: 8),
-                Text('蝶阀配置加载成功', style: TextStyle(fontSize: 17)),
+                Icon(Icons.check_circle,
+                    color: AppTheme.glowGreen(context), size: 22),
+                const SizedBox(width: 8),
+                const Text('蝶阀配置加载成功', style: TextStyle(fontSize: 17)),
               ],
             ),
-            backgroundColor: TechColors.bgDark,
+            backgroundColor: AppTheme.bgDark(context),
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
           ),
@@ -1299,18 +1327,20 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: TechColors.glowGreen, size: 26),
-                SizedBox(width: 8),
-                Text('蝶阀配置保存成功', style: TextStyle(fontSize: 19)),
+                Icon(Icons.check_circle,
+                    color: AppTheme.glowGreen(context), size: 26),
+                const SizedBox(width: 8),
+                const Text('蝶阀配置保存成功', style: TextStyle(fontSize: 19)),
               ],
             ),
-            backgroundColor: TechColors.bgDark,
+            backgroundColor: AppTheme.bgDark(context),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: TechColors.glowGreen.withOpacity(0.5)),
+              side: BorderSide(
+                  color: AppTheme.glowGreen(context).withOpacity(0.5)),
             ),
           ),
         );
@@ -1321,8 +1351,8 @@ class _SettingsPageState extends State<SettingsPage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline,
-                    color: TechColors.statusAlarm, size: 26),
+                Icon(Icons.error_outline,
+                    color: AppTheme.statusAlarm(context), size: 26),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -1332,11 +1362,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            backgroundColor: TechColors.bgDark,
+            backgroundColor: AppTheme.bgDark(context),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: TechColors.statusAlarm.withOpacity(0.5)),
+              side: BorderSide(
+                  color: AppTheme.statusAlarm(context).withOpacity(0.5)),
             ),
           ),
         );
@@ -1359,14 +1390,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(Icons.restore, color: TechColors.glowOrange, size: 22),
+            Icon(Icons.restore, color: AppTheme.glowOrange(context), size: 22),
             SizedBox(width: 8),
             Text('已重置为默认值 (30秒)', style: TextStyle(fontSize: 17)),
           ],
         ),
-        backgroundColor: TechColors.bgDark,
+        backgroundColor: AppTheme.bgDark(context),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),

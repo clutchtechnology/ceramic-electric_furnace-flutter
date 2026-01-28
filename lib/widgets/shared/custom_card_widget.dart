@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
 import '../icons/icons.dart';
+import '../../theme/app_theme.dart';
 
 /// ============================================================================
 /// 水泵卡片组件 (Pump Card Widget)
@@ -49,10 +50,10 @@ class CustomCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: TechColors.bgMedium.withOpacity(0.3),
+        color: AppTheme.bgMedium(context).withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: TechColors.borderDark,
+          color: AppTheme.borderDark(context),
           width: 1,
         ),
       ),
@@ -70,7 +71,7 @@ class CustomCardWidget extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) {
                   return Icon(
                     Icons.image_not_supported,
-                    color: TechColors.textSecondary.withOpacity(0.5),
+                    color: AppTheme.textSecondary(context).withOpacity(0.5),
                     size: 58,
                   );
                 },
@@ -84,10 +85,10 @@ class CustomCardWidget extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: TechColors.bgDeep.withOpacity(0.9),
+                color: AppTheme.bgDeep(context).withOpacity(0.9),
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: TechColors.glowCyan.withOpacity(0.4),
+                  color: AppTheme.glowCyan(context).withOpacity(0.4),
                   width: 1,
                 ),
               ),
@@ -97,27 +98,27 @@ class CustomCardWidget extends StatelessWidget {
                 children: [
                   // 第1行：编号+状态 | A相电流
                   _buildDataRow(
-                    leftWidget: _buildStatusLabel(),
-                    rightWidget: _buildCurrentItem('A', currentA),
+                    leftWidget: _buildStatusLabel(context),
+                    rightWidget: _buildCurrentItem(context, 'A', currentA),
                   ),
                   const SizedBox(height: 6),
                   // 第2行：功率 | B相电流
                   _buildDataRow(
-                    leftWidget: _buildPowerItem(),
-                    rightWidget: _buildCurrentItem('B', currentB),
+                    leftWidget: _buildPowerItem(context),
+                    rightWidget: _buildCurrentItem(context, 'B', currentB),
                   ),
                   const SizedBox(height: 6),
                   // 第3行：能耗 | C相电流
                   _buildDataRow(
-                    leftWidget: _buildEnergyItem(),
-                    rightWidget: _buildCurrentItem('C', currentC),
+                    leftWidget: _buildEnergyItem(context),
+                    rightWidget: _buildCurrentItem(context, 'C', currentC),
                   ),
                   const SizedBox(height: 6),
                   // 第4行：振动幅值 | 压力(仅1号有)
                   _buildDataRow(
-                    leftWidget: _buildVibrationItem(),
+                    leftWidget: _buildVibrationItem(context),
                     rightWidget: pressure != null
-                        ? _buildPressureItem()
+                        ? _buildPressureItem(context)
                         : const SizedBox(width: 90),
                   ),
                 ],
@@ -145,7 +146,7 @@ class CustomCardWidget extends StatelessWidget {
   }
 
   /// 状态标签：编号 + 状态灯 + 状态文字
-  Widget _buildStatusLabel() {
+  Widget _buildStatusLabel(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -154,13 +155,14 @@ class CustomCardWidget extends StatelessWidget {
           height: 10,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color:
-                isRunning ? TechColors.statusNormal : TechColors.statusOffline,
+            color: isRunning
+                ? AppTheme.statusNormal(context)
+                : AppTheme.statusOffline(context),
             boxShadow: [
               BoxShadow(
                 color: isRunning
-                    ? TechColors.statusNormal.withOpacity(0.6)
-                    : TechColors.statusOffline.withOpacity(0.3),
+                    ? AppTheme.statusNormal(context).withOpacity(0.6)
+                    : AppTheme.statusOffline(context).withOpacity(0.3),
                 blurRadius: 4,
                 spreadRadius: 1,
               ),
@@ -170,8 +172,8 @@ class CustomCardWidget extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           pumpNumber,
-          style: const TextStyle(
-            color: TechColors.glowCyan,
+          style: TextStyle(
+            color: AppTheme.borderGlow(context),
             fontSize: 17,
             fontWeight: FontWeight.bold,
           ),
@@ -180,8 +182,9 @@ class CustomCardWidget extends StatelessWidget {
         Text(
           isRunning ? '运行' : '停止',
           style: TextStyle(
-            color:
-                isRunning ? TechColors.statusNormal : TechColors.statusOffline,
+            color: isRunning
+                ? AppTheme.statusNormal(context)
+                : AppTheme.statusOffline(context),
             fontSize: 15,
           ),
         ),
@@ -190,8 +193,8 @@ class CustomCardWidget extends StatelessWidget {
   }
 
   /// 功率数据项
-  Widget _buildPowerItem() {
-    final color = powerColor ?? TechColors.glowCyan;
+  Widget _buildPowerItem(BuildContext context) {
+    final color = powerColor ?? AppTheme.borderGlow(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -206,10 +209,10 @@ class CustomCardWidget extends StatelessWidget {
             fontFamily: 'Roboto Mono',
           ),
         ),
-        const Text(
+        Text(
           'kW',
           style: TextStyle(
-            color: TechColors.textSecondary,
+            color: AppTheme.textSecondary(context),
             fontSize: 14,
           ),
         ),
@@ -218,25 +221,25 @@ class CustomCardWidget extends StatelessWidget {
   }
 
   /// 能耗数据项
-  Widget _buildEnergyItem() {
+  Widget _buildEnergyItem(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        EnergyIcon(size: 17, color: TechColors.glowOrange),
+        EnergyIcon(size: 17, color: AppTheme.glowOrange(context)),
         const SizedBox(width: 4),
         Text(
           energy.toStringAsFixed(1),
-          style: const TextStyle(
-            color: TechColors.glowOrange,
+          style: TextStyle(
+            color: AppTheme.glowOrange(context),
             fontSize: 17,
             fontWeight: FontWeight.w600,
             fontFamily: 'Roboto Mono',
           ),
         ),
-        const Text(
+        Text(
           'kWh',
           style: TextStyle(
-            color: TechColors.textSecondary,
+            color: AppTheme.textSecondary(context),
             fontSize: 14,
           ),
         ),
@@ -245,8 +248,8 @@ class CustomCardWidget extends StatelessWidget {
   }
 
   /// 振动幅值数据项
-  Widget _buildVibrationItem() {
-    final color = vibrationColor ?? TechColors.glowGreen;
+  Widget _buildVibrationItem(BuildContext context) {
+    final color = vibrationColor ?? AppTheme.glowGreen(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -261,10 +264,10 @@ class CustomCardWidget extends StatelessWidget {
             fontFamily: 'Roboto Mono',
           ),
         ),
-        const Text(
+        Text(
           'mm/s',
           style: TextStyle(
-            color: TechColors.textSecondary,
+            color: AppTheme.textSecondary(context),
             fontSize: 12,
           ),
         ),
@@ -273,8 +276,8 @@ class CustomCardWidget extends StatelessWidget {
   }
 
   /// 压力数据项 (仅1号水泵)
-  Widget _buildPressureItem() {
-    final color = pressureColor ?? TechColors.glowOrange;
+  Widget _buildPressureItem(BuildContext context) {
+    final color = pressureColor ?? AppTheme.glowOrange(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -289,10 +292,10 @@ class CustomCardWidget extends StatelessWidget {
             fontFamily: 'Roboto Mono',
           ),
         ),
-        const Text(
+        Text(
           'MPa',
           style: TextStyle(
-            color: TechColors.textSecondary,
+            color: AppTheme.textSecondary(context),
             fontSize: 12,
           ),
         ),
@@ -301,8 +304,8 @@ class CustomCardWidget extends StatelessWidget {
   }
 
   /// 电流数据项 - 根据阈值显示颜色，格式：图标 + A: 数值 + 单位
-  Widget _buildCurrentItem(String phase, double value) {
-    final color = currentColor ?? TechColors.glowCyan;
+  Widget _buildCurrentItem(BuildContext context, String phase, double value) {
+    final color = currentColor ?? AppTheme.borderGlow(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -325,10 +328,10 @@ class CustomCardWidget extends StatelessWidget {
             fontFamily: 'Roboto Mono',
           ),
         ),
-        const Text(
+        Text(
           'A',
           style: TextStyle(
-            color: TechColors.textSecondary,
+            color: AppTheme.textSecondary(context),
             fontSize: 14,
           ),
         ),

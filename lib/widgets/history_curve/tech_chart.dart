@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../common/tech_line_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// 科技风格曲线图组件
 /// 使用 fl_chart 实现，支持单线或多线显示
@@ -22,14 +23,14 @@ class TechLineChart extends StatefulWidget {
     required this.data,
     this.datas,
     this.colors,
-    this.accentColor = TechColors.glowCyan,
+    Color? accentColor,
     this.yAxisLabel,
     this.xAxisLabel,
     this.minY,
     this.maxY,
     this.showGrid = true,
     this.showPoints = false, // 默认改为false，类似工控风格
-  });
+  }) : accentColor = accentColor ?? const Color(0xFF00d4ff);
 
   @override
   State<TechLineChart> createState() => _TechLineChartState();
@@ -53,8 +54,8 @@ class _TechLineChartState extends State<TechLineChart> {
               padding: const EdgeInsets.only(right: 8.0, bottom: 4.0),
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: TechColors.textSecondary,
+                style: TextStyle(
+                  color: AppTheme.textSecondary(context),
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
@@ -94,7 +95,7 @@ class _TechLineChartState extends State<TechLineChart> {
               horizontalInterval: 20,
               getDrawingHorizontalLine: (value) {
                 return FlLine(
-                  color: TechColors.gridLine.withOpacity(0.5),
+                  color: AppTheme.gridLine(context).withOpacity(0.5),
                   strokeWidth: 1,
                 );
               },
@@ -121,8 +122,8 @@ class _TechLineChartState extends State<TechLineChart> {
                   getTitlesWidget: (value, meta) {
                     return Text(
                       value.toStringAsFixed(1),
-                      style: const TextStyle(
-                        color: TechColors.textSecondary,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary(context),
                         fontSize: 10,
                       ),
                       textAlign: TextAlign.right,
@@ -133,7 +134,7 @@ class _TechLineChartState extends State<TechLineChart> {
             ),
             borderData: FlBorderData(
               show: true,
-              border: Border.all(color: TechColors.borderDark),
+              border: Border.all(color: AppTheme.borderDark(context)),
             ),
             minX: 0,
             maxX: 10,
@@ -173,8 +174,9 @@ class _TechLineChartState extends State<TechLineChart> {
           // 触控交互配置
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) => TechColors.bgLight.withOpacity(0.9),
-              tooltipBorder: const BorderSide(color: TechColors.borderGlow),
+              getTooltipColor: (_) =>
+                  AppTheme.bgLight(context).withOpacity(0.9),
+              tooltipBorder: BorderSide(color: AppTheme.borderGlow(context)),
               tooltipRoundedRadius: 4,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
@@ -211,7 +213,7 @@ class _TechLineChartState extends State<TechLineChart> {
             horizontalInterval: (effectiveMaxY - effectiveMinY) / 5,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: TechColors.gridLine.withOpacity(0.5),
+                color: AppTheme.gridLine(context).withOpacity(0.5),
                 strokeWidth: 1,
               );
             },
@@ -238,8 +240,8 @@ class _TechLineChartState extends State<TechLineChart> {
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
                         seriesList.first[index].label,
-                        style: const TextStyle(
-                          color: TechColors.textSecondary,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary(context),
                           fontSize: 10,
                         ),
                       ),
@@ -258,8 +260,8 @@ class _TechLineChartState extends State<TechLineChart> {
                 getTitlesWidget: (value, meta) {
                   return Text(
                     value.toStringAsFixed(1),
-                    style: const TextStyle(
-                      color: TechColors.textSecondary,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary(context),
                       fontSize: 10,
                     ),
                     textAlign: TextAlign.right,
@@ -272,7 +274,7 @@ class _TechLineChartState extends State<TechLineChart> {
           // 边框配置
           borderData: FlBorderData(
             show: true,
-            border: Border.all(color: TechColors.borderDark),
+            border: Border.all(color: AppTheme.borderDark(context)),
           ),
 
           // 范围配置
